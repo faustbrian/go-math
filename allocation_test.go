@@ -5,12 +5,12 @@ import (
 	"math/big"
 	"testing"
 
-	gomath "github.com/faustbrian/golib/pkg/math"
-	"github.com/faustbrian/golib/pkg/math/bigfloat"
-	"github.com/faustbrian/golib/pkg/math/decimal"
-	mathencoding "github.com/faustbrian/golib/pkg/math/encoding"
-	"github.com/faustbrian/golib/pkg/math/integer"
-	"github.com/faustbrian/golib/pkg/math/rational"
+	gomath "github.com/faustbrian/go-math"
+	"github.com/faustbrian/go-math/bigfloat"
+	"github.com/faustbrian/go-math/decimal"
+	mathencoding "github.com/faustbrian/go-math/encoding"
+	"github.com/faustbrian/go-math/integer"
+	"github.com/faustbrian/go-math/rational"
 )
 
 var conditionStringSink string

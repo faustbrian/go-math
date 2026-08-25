@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	gomath "github.com/faustbrian/golib/pkg/math"
-	"github.com/faustbrian/golib/pkg/math/decimal"
-	"github.com/faustbrian/golib/pkg/math/integer"
+	gomath "github.com/faustbrian/go-math"
+	"github.com/faustbrian/go-math/decimal"
+	"github.com/faustbrian/go-math/integer"
 )
 
 func Example_integer() {

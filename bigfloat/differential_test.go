@@ -6,8 +6,8 @@ import (
 	"math/rand/v2"
 	"testing"
 
-	gomath "github.com/faustbrian/golib/pkg/math"
-	"github.com/faustbrian/golib/pkg/math/bigfloat"
+	gomath "github.com/faustbrian/go-math"
+	"github.com/faustbrian/go-math/bigfloat"
 )
 
 func TestFloatOperationsMatchBigFloat(t *testing.T) {

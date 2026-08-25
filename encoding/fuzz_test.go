@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	gomath "github.com/faustbrian/golib/pkg/math"
-	mathencoding "github.com/faustbrian/golib/pkg/math/encoding"
+	gomath "github.com/faustbrian/go-math"
+	mathencoding "github.com/faustbrian/go-math/encoding"
 )
 
 func FuzzBinaryDecoders(f *testing.F) {

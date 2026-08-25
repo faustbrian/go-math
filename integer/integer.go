@@ -9,7 +9,7 @@ import (
 	"math/big"
 	"strings"
 
-	gomath "github.com/faustbrian/golib/pkg/math"
+	gomath "github.com/faustbrian/go-math"
 )
 
 // Integer is an immutable arbitrary-precision signed integer. Its zero value

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	gomath "github.com/faustbrian/golib/pkg/math"
-	"github.com/faustbrian/golib/pkg/math/rational"
+	gomath "github.com/faustbrian/go-math"
+	"github.com/faustbrian/go-math/rational"
 )
 
 func FuzzParseRoundTrip(f *testing.F) {

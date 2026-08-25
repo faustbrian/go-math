@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	gomath "github.com/faustbrian/golib/pkg/math"
+	gomath "github.com/faustbrian/go-math"
 )
 
 type cancelAfterValidation struct{ calls int }

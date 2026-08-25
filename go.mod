@@ -1,4 +1,4 @@
-module github.com/faustbrian/golib/pkg/math
+module github.com/faustbrian/go-math
 
 go 1.26.6
 

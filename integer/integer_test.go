@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	gomath "github.com/faustbrian/golib/pkg/math"
-	"github.com/faustbrian/golib/pkg/math/integer"
+	gomath "github.com/faustbrian/go-math"
+	"github.com/faustbrian/go-math/integer"
 )
 
 func TestIntegerDefensivelyCopiesBigIntegers(t *testing.T) {

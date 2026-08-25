@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-math",
+  "packages": [
+    {
+      "module_directory": ".",
+      "directory": ".",
+      "name": "gomath",
+      "import_path": "github.com/faustbrian/go-math",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "bigfloat",
+      "name": "bigfloat",
+      "import_path": "github.com/faustbrian/go-math/bigfloat",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "decimal",
+      "name": "decimal",
+      "import_path": "github.com/faustbrian/go-math/decimal",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "encoding",
+      "name": "encoding",
+      "import_path": "github.com/faustbrian/go-math/encoding",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "integer",
+      "name": "integer",
+      "import_path": "github.com/faustbrian/go-math/integer",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "mathtest",
+      "name": "mathtest",
+      "import_path": "github.com/faustbrian/go-math/mathtest",
+      "kind": "test support",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "rational",
+      "name": "rational",
+      "import_path": "github.com/faustbrian/go-math/rational",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    }
+  ]
+}

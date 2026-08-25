@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"testing"
 
-	gomath "github.com/faustbrian/golib/pkg/math"
+	gomath "github.com/faustbrian/go-math"
 )
 
 func TestAMutationConstructionAndParsingContracts(t *testing.T) {

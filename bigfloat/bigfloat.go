@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	gomath "github.com/faustbrian/golib/pkg/math"
+	gomath "github.com/faustbrian/go-math"
 )
 
 // Context makes binary precision, rounding, traps, and resource limits explicit.

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/math/mathtest"
+	"github.com/faustbrian/go-math/mathtest"
 )
 
 type number int

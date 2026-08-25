@@ -8,7 +8,7 @@ import (
 	"math/big"
 	"strings"
 
-	gomath "github.com/faustbrian/golib/pkg/math"
+	gomath "github.com/faustbrian/go-math"
 )
 
 // Rational is an immutable normalized fraction. Its zero value represents zero.

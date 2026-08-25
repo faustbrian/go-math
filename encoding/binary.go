@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"math/big"
 
-	gomath "github.com/faustbrian/golib/pkg/math"
-	"github.com/faustbrian/golib/pkg/math/bigfloat"
-	"github.com/faustbrian/golib/pkg/math/decimal"
-	"github.com/faustbrian/golib/pkg/math/integer"
-	"github.com/faustbrian/golib/pkg/math/rational"
+	gomath "github.com/faustbrian/go-math"
+	"github.com/faustbrian/go-math/bigfloat"
+	"github.com/faustbrian/go-math/decimal"
+	"github.com/faustbrian/go-math/integer"
+	"github.com/faustbrian/go-math/rational"
 )
 
 const (

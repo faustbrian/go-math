@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	gomath "github.com/faustbrian/golib/pkg/math"
+	gomath "github.com/faustbrian/go-math"
 )
 
 func TestSharedContracts(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	gomath "github.com/faustbrian/golib/pkg/math"
+	gomath "github.com/faustbrian/go-math"
 )
 
 func TestConditionAndRoundingFormattingEdges(t *testing.T) {
