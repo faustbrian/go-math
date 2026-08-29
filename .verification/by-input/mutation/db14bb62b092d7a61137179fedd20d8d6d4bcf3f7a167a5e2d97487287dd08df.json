@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-math",
+  "module": ".",
+  "package": "rational",
+  "gate": "mutation",
+  "input_digest": "sha256:db14bb62b092d7a61137179fedd20d8d6d4bcf3f7a167a5e2d97487287dd08df",
+  "verifier_digest": "sha256:9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+  "result": "passed",
+  "report_digest": "sha256:2fcd669113a007aba4e7d21407fd87eb3e50a0c261cca06705fed6e22ba5e6ff",
+  "environment": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "arm64",
+    "GOOS": "darwin",
+    "GOVERSION": "go1.26.6",
+    "evidence_origin": "approved_legacy_checkpoint"
+  },
+  "completed_at": "2026-08-29T02:42:40.976177Z"
+}
