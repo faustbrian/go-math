@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "decisions": [
+    {
+      "id": "MATH-DEC-001",
+      "authoritative_sources": ["gda-specification-source"],
+      "executable_evidence": ["TestDecimalRepresentationAndBigOwnership", "TestDecimalConstructionAndParsingEdges", "TestTextAndJSONNeverUseFloatingPoint"],
+      "fixtures": [],
+      "fuzz": ["FuzzParseContextAndRoundTrip", "FuzzJSONDecoding"],
+      "interoperability_evidence": [],
+      "interoperability_classification": "not assessed",
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["Decimal exposes finite coefficient-times-power-of-ten values with canonical numeric zero and no IEEE conformance claim."]
+    },
+    {
+      "id": "MATH-DEC-002",
+      "authoritative_sources": ["gda-specification-source"],
+      "executable_evidence": ["TestDecimalConstructionAndParsingEdges", "TestDecimalParserCanExplicitlyEnableExponentNotation", "TestDecimalRepresentationAndBigOwnership"],
+      "fixtures": [],
+      "fuzz": ["FuzzParseContextAndRoundTrip", "FuzzJSONDecoding"],
+      "interoperability_evidence": [],
+      "interoperability_classification": "not assessed",
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["Strict parsing, opt-in grammar features, numeric equality, and representation equality are distinct contracts."]
+    },
+    {
+      "id": "MATH-DEC-003",
+      "authoritative_sources": ["gda-specification-source"],
+      "executable_evidence": ["TestDecimalExactArithmeticEdges", "TestDecimalContextRoundsEveryArithmeticOperation", "TestDivisionRequiresExplicitRoundingForRepeatingResults"],
+      "fixtures": [],
+      "fuzz": ["FuzzParseContextAndRoundTrip"],
+      "interoperability_evidence": [],
+      "interoperability_classification": "not assessed",
+      "differential_evidence": ["specification/maintained-peers.json"],
+      "differential_classification": "maintained peer agreement",
+      "public_behavior": ["Exact operations and explicit Context operations remain separate, and non-extended operand pre-rounding is unsupported."]
+    },
+    {
+      "id": "MATH-DEC-004",
+      "authoritative_sources": ["gda-specification-source"],
+      "executable_evidence": ["TestContextReportsRoundingConditions", "TestContextReportsExponentConditions", "TestContextTrapsSelectedConditions"],
+      "fixtures": [],
+      "fuzz": ["FuzzParseContextAndRoundTrip"],
+      "interoperability_evidence": [],
+      "interoperability_classification": "not assessed",
+      "differential_evidence": ["specification/maintained-peers.json"],
+      "differential_classification": "maintained peer agreement",
+      "public_behavior": ["Context reports precision, adjusted-exponent, condition, and trap results without hiding conditions on errors."]
+    },
+    {
+      "id": "MATH-DEC-005",
+      "authoritative_sources": ["gda-specification-source"],
+      "executable_evidence": ["TestEveryRoundingModeHandlesPositiveAndNegativeTies", "TestGeneralDecimalArithmeticVectors"],
+      "fixtures": ["specification/gda/rounding0.decTest"],
+      "fuzz": ["FuzzParseContextAndRoundTrip"],
+      "interoperability_evidence": ["specification/gda/rounding0.decTest"],
+      "interoperability_classification": "official fixture agreement",
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["Seven explicit source-defined rounding modes have stable positive and negative tie behavior."]
+    },
+    {
+      "id": "MATH-DEC-006",
+      "authoritative_sources": ["gda-specification-source"],
+      "executable_evidence": ["TestContextTrapsSelectedConditions", "TestResourceCancellationAndArithmeticErrorsRemainDistinct", "TestDivisionRequiresExplicitRoundingForRepeatingResults"],
+      "fixtures": [],
+      "fuzz": ["FuzzParseContextAndRoundTrip"],
+      "interoperability_evidence": [],
+      "interoperability_classification": "not assessed",
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["Exceptional arithmetic returns classified errors and retained conditions instead of non-finite decimal values."]
+    },
+    {
+      "id": "MATH-DEC-007",
+      "authoritative_sources": ["gda-specification-source"],
+      "executable_evidence": ["TestQuantizeUsesExplicitFractionalScale", "TestQuantizedQuoRoundsOnceAtTheRequestedScale", "TestGeneralDecimalArithmeticVectors"],
+      "fixtures": ["specification/gda/quantize0.decTest"],
+      "fuzz": ["FuzzParseContextAndRoundTrip"],
+      "interoperability_evidence": ["specification/gda/quantize0.decTest"],
+      "interoperability_classification": "official fixture agreement",
+      "differential_evidence": ["specification/maintained-peers.json"],
+      "differential_classification": "maintained peer agreement",
+      "public_behavior": ["Fractional scale maps to target exponent -scale and quantized division rounds once."]
+    },
+    {
+      "id": "MATH-DEC-008",
+      "authoritative_sources": ["gda-testcases-source", "gda-testcases-subset-source", "gda-testcases-documentation"],
+      "executable_evidence": ["TestGeneralDecimalArithmeticVectors"],
+      "fixtures": ["specification/gda/add.decTest", "specification/gda/add0.decTest", "specification/gda/subtract.decTest", "specification/gda/subtract0.decTest", "specification/gda/multiply.decTest", "specification/gda/multiply0.decTest", "specification/gda/divide.decTest", "specification/gda/divide0.decTest", "specification/gda/quantize0.decTest", "specification/gda/rounding0.decTest"],
+      "fuzz": [],
+      "interoperability_evidence": ["specification/gda/add.decTest", "specification/gda/subtract.decTest", "specification/gda/multiply.decTest", "specification/gda/divide.decTest", "specification/gda/quantize0.decTest", "specification/gda/rounding0.decTest"],
+      "interoperability_classification": "official fixture agreement",
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["The harness enforces 3547 executed and 1542 explicitly skipped vectors from two digest-pinned archives after LF normalization."]
+    },
+    {
+      "id": "MATH-DEC-009",
+      "authoritative_sources": ["gda-specification-source"],
+      "executable_evidence": ["TestResourceCancellationAndArithmeticErrorsRemainDistinct", "TestDecimalResourceBoundaries", "TestDecimalOperationsRejectOversizedOperandsBeforeShortcuts"],
+      "fixtures": [],
+      "fuzz": ["FuzzParseContextAndRoundTrip", "FuzzJSONDecoding", "FuzzBinaryDecoders"],
+      "interoperability_evidence": [],
+      "interoperability_classification": "not assessed",
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["Potentially expensive numeric work is synchronously cancellable and bounded by explicit limits."]
+    },
+    {
+      "id": "MATH-DEC-010",
+      "authoritative_sources": ["gda-specification-source"],
+      "executable_evidence": ["TestTextAndJSONNeverUseFloatingPoint", "TestBinaryCodecsRoundTripDeterministically", "TestBinaryCodecsRejectNonCanonicalAndOversizedValues"],
+      "fixtures": [],
+      "fuzz": ["FuzzJSONDecoding", "FuzzBinaryDecoders"],
+      "interoperability_evidence": [],
+      "interoperability_classification": "not assessed",
+      "differential_evidence": [],
+      "differential_classification": "not assessed",
+      "public_behavior": ["Canonical non-exponent text, JSON strings, and versioned deterministic binary frames never pass through float64."]
+    },
+    {
+      "id": "MATH-DEC-011",
+      "authoritative_sources": ["gda-specification-source"],
+      "executable_evidence": ["TestDecimalDifferentialAgainstAPDAndShopspring"],
+      "fixtures": [],
+      "fuzz": [],
+      "interoperability_evidence": [],
+      "interoperability_classification": "not assessed",
+      "differential_evidence": ["specification/maintained-peers.json"],
+      "differential_classification": "maintained peer agreement",
+      "public_behavior": ["A bounded 488-comparison maintained-peer lane covers only named overlapping operations and conditions, with explicit gaps."]
+    }
+  ]
+}

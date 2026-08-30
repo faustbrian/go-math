@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {"id": "MATH-DEC-001", "digests": ["bf1c165c9f1dc38c6373deb5a104ab520a2392efd600b71e2cc75c5391303ff0"]},
+    {"id": "MATH-DEC-002", "digests": ["6b3149aea3a5fcb70b8bc58bc6618d1275209ee25489875c62e956b4a778d34d"]},
+    {"id": "MATH-DEC-003", "digests": ["58fa0f8a0d1d8af32d75659513da17ee3c44b02b086b6cc441f5e4e9c5890511"]},
+    {"id": "MATH-DEC-004", "digests": ["3c27045c7e9639a8fe7f8be4c3cad57195fca56521e5778a72cb88cec8321151"]},
+    {"id": "MATH-DEC-005", "digests": ["935afbb1f907f4da22212156dc6781175f3370941ac848156cbabd5e20301811"]},
+    {"id": "MATH-DEC-006", "digests": ["0bf5610e00555661d051678175d50f4a9d919cee4ce30b5da9838798ee7f67fc"]},
+    {"id": "MATH-DEC-007", "digests": ["0dc1ca93c10d999ee4038ce5d2dce1ce9575eb887c1960850b595e515925dba1"]},
+    {"id": "MATH-DEC-008", "digests": ["fddf149e8250739ca2f94cce735d77da5dcd6b642c27d76e629a53d7d3cb3c1e"]},
+    {"id": "MATH-DEC-009", "digests": ["e97d1a4031a30a04a3a520dd93275630f30114c147ececae10736b5539b3b4dc"]},
+    {"id": "MATH-DEC-010", "digests": ["bf3e572531b979dddd588313d43a85daa91b0af71ecc81d7319513704b197f1e"]},
+    {"id": "MATH-DEC-011", "digests": ["a1015e23bedf4dbf62a3ffbe2f0d43520ee6fa21abcfb4b12bf53935774f53c8"]}
+  ]
+}

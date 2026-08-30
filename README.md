@@ -28,9 +28,10 @@ bounded by `gomath.Limits`. Decimal contexts make precision, exponent range,
 rounding, conditions, and traps explicit. No conversion passes through
 `float64`.
 
-See the [documentation index](docs/README.md), [cookbook](docs/cookbook.md),
-and [verification guide](docs/verification.md). The minimum supported toolchain
-is Go 1.26.6.
+See the [documentation index](docs/README.md),
+[specification decisions](docs/specification-decisions.md),
+[cookbook](docs/cookbook.md), and [verification guide](docs/verification.md).
+The minimum supported toolchain is Go 1.26.6.
 
 ## Packages
 

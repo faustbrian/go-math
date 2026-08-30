@@ -14,6 +14,14 @@ mutation:
     ledger: ".verification/mutation/migration-ledger.json"
 operations:
 - module: "."
+  gate: conformance
+  steps:
+  - type: go-test
+    packages: ["./decimal"]
+    run: '^(TestGeneralDecimalArithmeticVectors|TestDecimalDifferentialAgainstAPDAndShopspring)$'
+    count: 1
+    timeout: 20m
+- module: "."
   gate: test
   steps:
   - type: make

@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "test": "TestDecimalDifferentialAgainstAPDAndShopspring",
+  "operand_pairs": 61,
+  "total_comparisons": 488,
+  "peers": [
+    {
+      "module": "github.com/cockroachdb/apd/v3",
+      "version": "v3.2.3",
+      "operations": ["add", "subtract", "multiply", "divide", "quantize"],
+      "comparisons": 305,
+      "result_contract": ["numeric value", "Rounded condition", "Inexact condition"]
+    },
+    {
+      "module": "github.com/shopspring/decimal",
+      "version": "v1.4.0",
+      "operations": ["exact add", "exact subtract", "exact multiply"],
+      "comparisons": 183,
+      "result_contract": ["exact numeric value"]
+    }
+  ],
+  "classification": "maintained peer agreement",
+  "disagreement_policy": "Minimize and classify each disagreement as a local defect, peer defect, fixture defect, harness defect, specification ambiguity, or deliberate policy difference; never use majority voting.",
+  "gaps": [
+    "parsing grammar",
+    "non-finite values",
+    "signed zero",
+    "overflow, underflow, subnormal, and clamped behavior",
+    "traps and error categories",
+    "serialization",
+    "defensive resource limits and cancellation",
+    "corpus skip classification"
+  ]
+}
