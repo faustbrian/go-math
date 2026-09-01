@@ -4,9 +4,9 @@
 
 ### Changed
 
-- Replace the repository-local verification implementation with the pinned
-  `go-library-tools` v1.0.13 CLI and reusable workflow while preserving package
-  policy and content-addressed verification evidence.
+- Use the released `go-library-tools` v1.2.0 CLI and immutable merged
+  workflow at `1f9629e5f27418600460b55a50a5b2fc81697fab` while preserving
+  package policy and content-addressed verification evidence.
 - Make architecture verification portable to CI runners without `ripgrep` and
   restrict it to repository-owned Go sources.
 - Remove the sibling-checkout compatibility command; reverse consumers now
