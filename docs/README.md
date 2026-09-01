@@ -6,6 +6,7 @@
 - [Precision and rounding](precision.md)
 - [Conditions and traps](conditions.md)
 - [Cookbook](cookbook.md)
+- [Specification decisions](specification-decisions.md)
 
 ## Reference and operations
 
@@ -20,6 +21,7 @@
 ## Maintainers
 
 - [Verification](verification.md)
+- [Specification conformance](../specification/README.md)
 - [Benchmark baseline](benchmark-baseline.md)
 - [Contributing](../CONTRIBUTING.md)
 - [Release history](../CHANGELOG.md)

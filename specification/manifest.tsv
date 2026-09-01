@@ -1,0 +1,6 @@
+id	version	url	sha256	status
+gda-specification-source	General Decimal Arithmetic 1.70	https://speleotrove.com/decimal/decarith.html	e875a502297d1e1ea8dfacb8d7972fbef294e3bae45e9bae41848507929d183f	pinned
+gda-testcases-documentation	General Decimal Arithmetic Testcases documentation 2.44	https://speleotrove.com/decimal/dectest.html	e87013a2790c852d804f1d9a82a7f9404869f9ab08a99548b2b44e4660ee1861	pinned
+gda-testcases-source	General Decimal Arithmetic Testcases 2.62 full archive	https://speleotrove.com/decimal/dectest.zip	b70a224cd52e82b7a8150aedac5efa2d0cb3941696fd829bdbe674f9f65c3926	pinned
+gda-testcases-subset-source	General Decimal Arithmetic Testcases 2.62 subset archive	https://speleotrove.com/decimal/dectest0.zip	f74c6657ba2b934110ff4729c4394e5bd4c8848e7c82716f0f9016484a23a655	pinned
+gda-releases	General Decimal Arithmetic release authority reviewed 2026-08-30	https://speleotrove.com/decimal/	8caa13414d68d3058fb1f086e40cb4b87fe472724ad212fd5cfba08b253dd205	pinned

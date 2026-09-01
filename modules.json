@@ -122,16 +122,23 @@
       "build_tags": [],
       "test_tags": [],
       "interoperability_tools": [],
-      "specifications": [],
-      "conformance_corpora": [],
-      "provenance": [],
+      "specifications": [
+        "General Decimal Arithmetic 1.70",
+        "General Decimal Arithmetic Testcases 2.62"
+      ],
+      "conformance_corpora": [
+        "General Decimal Arithmetic Testcases 2.62"
+      ],
+      "provenance": [
+        "specification/manifest.tsv"
+      ],
       "goal_files": [],
       "goal_status": "not-applicable",
       "goal_evidence": [],
       "gates": {
         "api_compatibility": true,
         "benchmarks": true,
-        "conformance": false,
+        "conformance": true,
         "coverage": true,
         "documentation": true,
         "fuzz": true,

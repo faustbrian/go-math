@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-08-30",
+  "review_interval_days": 30,
+  "authorities": [
+    {
+      "id": "gda-specification-source",
+      "kind": "specification",
+      "version": "General Decimal Arithmetic 1.70",
+      "url": "https://speleotrove.com/decimal/decarith.html",
+      "sha256": "e875a502297d1e1ea8dfacb8d7972fbef294e3bae45e9bae41848507929d183f",
+      "specifications": ["General Decimal Arithmetic 1.70"]
+    },
+    {
+      "id": "gda-testcases-documentation",
+      "kind": "specification",
+      "version": "General Decimal Arithmetic Testcases documentation 2.44",
+      "url": "https://speleotrove.com/decimal/dectest.html",
+      "sha256": "e87013a2790c852d804f1d9a82a7f9404869f9ab08a99548b2b44e4660ee1861",
+      "specifications": ["General Decimal Arithmetic Testcases 2.62"]
+    },
+    {
+      "id": "gda-testcases-source",
+      "kind": "specification",
+      "version": "General Decimal Arithmetic Testcases 2.62",
+      "url": "https://speleotrove.com/decimal/dectest.zip",
+      "sha256": "b70a224cd52e82b7a8150aedac5efa2d0cb3941696fd829bdbe674f9f65c3926",
+      "specifications": ["General Decimal Arithmetic Testcases 2.62"]
+    },
+    {
+      "id": "gda-testcases-subset-source",
+      "kind": "specification",
+      "version": "General Decimal Arithmetic Testcases 2.62",
+      "url": "https://speleotrove.com/decimal/dectest0.zip",
+      "sha256": "f74c6657ba2b934110ff4729c4394e5bd4c8848e7c82716f0f9016484a23a655",
+      "specifications": ["General Decimal Arithmetic Testcases 2.62"]
+    },
+    {
+      "id": "gda-releases",
+      "kind": "releases",
+      "url": "https://speleotrove.com/decimal/",
+      "sha256": "8caa13414d68d3058fb1f086e40cb4b87fe472724ad212fd5cfba08b253dd205",
+      "specifications": ["General Decimal Arithmetic 1.70", "General Decimal Arithmetic Testcases 2.62"]
+    }
+  ]
+}

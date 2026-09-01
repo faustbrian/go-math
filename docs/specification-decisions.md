@@ -1,0 +1,716 @@
+# Specification decisions
+
+This register makes every observable choice attributable to the pinned General
+Decimal Arithmetic sources. The complete typed record is repeated in each
+section so the human and machine contracts can be audited without reconstructing
+intent from implementation code. The authoritative machine records are
+[decisions.json](../specification/decisions.json) and
+[conformance.json](../specification/conformance.json); the
+[conformance matrix](../specification/README.md) states the claim boundary.
+
+General Decimal Arithmetic is the only attributable external arithmetic
+specification currently implemented. IEEE 754, IEEE 854, math/big, APD, and
+shopspring/decimal are not declared normative authorities. The latter two are
+maintained peers only.
+
+A resolved decision changes only through compatibility review, executable
+evidence, a new canonical digest in the append-only history, and a changelog
+record. Unknown behavior remains unresolved rather than becoming an implicit
+default.
+
+## MATH-DEC-001: Finite decimal value model
+
+The following record is the complete reviewed decision, including consequences,
+evidence, public surface, upstream status, and reconsideration trigger.
+
+Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
+
+```json
+{
+  "id": "MATH-DEC-001",
+  "title": "Finite decimal value model",
+  "status": "resolved",
+  "owner": "go-math maintainers",
+  "classification": "optional behavior",
+  "decision_scope": "application-policy",
+  "specification": "General Decimal Arithmetic 1.70",
+  "version": "General Decimal Arithmetic 1.70",
+  "source_authority": "gda-specification-source",
+  "section": "Abstract representation and special values",
+  "requirement_strength": "not specified",
+  "issue": "General Decimal Arithmetic defines finite values, infinities, NaNs, and signed zero, while the package must choose which value categories and identity distinctions its native Go type exposes.",
+  "interpretations": [
+    "Expose the complete abstract decimal model including special values and signed zero",
+    "Expose only finite coefficient-times-power-of-ten values with canonical numeric zero"
+  ],
+  "peer_behavior": "APD exposes finite and non-finite decimals and signed forms, while shopspring/decimal exposes a finite decimal model; peer type boundaries do not determine this package contract.",
+  "selected_behavior": "Decimal represents only finite coefficient * 10^exponent values, rejects NaN and infinity, and treats every zero representation as one numeric zero without signed-zero identity; the package does not claim IEEE 754 or IEEE 854 conformance.",
+  "rationale": "A finite immutable value type keeps arithmetic results representable as ordinary Go values and makes exceptional operations explicit errors rather than hidden special values.",
+  "security_consequences": "Non-finite text cannot enter arithmetic paths or bypass finite resource checks.",
+  "resource_consequences": "Coefficient and exponent work remains bounded by gomath.Limits instead of admitting unbounded special-case propagation.",
+  "compatibility_consequences": "Adding special values or signed-zero identity would change parsing, equality, arithmetic, and serialization contracts and requires compatibility review.",
+  "wire_consequences": "Text, JSON, and binary forms encode only finite values and never emit NaN, infinity, or negative zero identity.",
+  "executable_evidence": [
+    "TestDecimalRepresentationAndBigOwnership",
+    "TestDecimalConstructionAndParsingEdges",
+    "TestTextAndJSONNeverUseFloatingPoint"
+  ],
+  "fixture_evidence": [],
+  "fuzz_evidence": [
+    "FuzzParseContextAndRoundTrip",
+    "FuzzJSONDecoding"
+  ],
+  "interoperability_evidence": [],
+  "differential_evidence": [],
+  "public_apis": [
+    "Decimal",
+    "New",
+    "Parse",
+    "Decimal.Equal",
+    "Decimal.IsZero"
+  ],
+  "documentation": [
+    "docs/specification-decisions.md",
+    "docs/numeric-model.md",
+    "docs/serialization.md"
+  ],
+  "upstream_status": "General Decimal Arithmetic 1.70 remains the pinned semantic source; IEEE standards are not attributable package conformance authorities.",
+  "reconsider_when": "A public requirement needs non-finite values, signed-zero identity, or an explicit IEEE conformance profile."
+}
+```
+
+## MATH-DEC-002: Strict parsing and representation equality
+
+The following record is the complete reviewed decision, including consequences,
+evidence, public surface, upstream status, and reconsideration trigger.
+
+Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
+
+```json
+{
+  "id": "MATH-DEC-002",
+  "title": "Strict parsing and representation equality",
+  "status": "resolved",
+  "owner": "go-math maintainers",
+  "classification": "implementation-defined behavior",
+  "decision_scope": "application-policy",
+  "specification": "General Decimal Arithmetic 1.70",
+  "version": "General Decimal Arithmetic 1.70",
+  "source_authority": "gda-specification-source",
+  "section": "Numbers, strings, and abstract representation",
+  "requirement_strength": "not specified",
+  "issue": "The abstract decimal syntax admits representation choices that a strict Go parser, numeric equality operation, and representation-sensitive operation must distinguish explicitly.",
+  "interpretations": [
+    "Accept every GDA numeric spelling by default and collapse representation distinctions",
+    "Use a strict default grammar, explicit opt-in parser options, numeric equality, and separate representation equality"
+  ],
+  "peer_behavior": "APD and shopspring/decimal accept different input grammars and expose different scale or exponent identity semantics.",
+  "selected_behavior": "Parse uses the strict package grammar; ParseWithOptions separately enables exponent notation, a leading plus, leading zeros, surrounding whitespace, and underscores; Equal compares numeric value while SameRepresentation compares coefficient and exponent.",
+  "rationale": "Explicit grammar switches and two named equality contracts prevent permissive input or scale identity from being inferred accidentally.",
+  "security_consequences": "Unexpected separators, whitespace, signs, exponent notation, and hostile digit counts fail closed unless a caller explicitly enables them within limits.",
+  "resource_consequences": "Parsing is bounded before attacker-sized coefficient or exponent work and representation comparison performs no normalization allocation.",
+  "compatibility_consequences": "Default grammar, option meaning, numeric equality, and representation equality are stable public behavior.",
+  "wire_consequences": "Equivalent representations may compare numerically equal while preserving distinct coefficients and exponents until canonical serialization.",
+  "executable_evidence": [
+    "TestDecimalConstructionAndParsingEdges",
+    "TestDecimalParserCanExplicitlyEnableExponentNotation",
+    "TestDecimalRepresentationAndBigOwnership"
+  ],
+  "fixture_evidence": [],
+  "fuzz_evidence": [
+    "FuzzParseContextAndRoundTrip",
+    "FuzzJSONDecoding"
+  ],
+  "interoperability_evidence": [],
+  "differential_evidence": [],
+  "public_apis": [
+    "Parse",
+    "ParseWithOptions",
+    "ParseOptions",
+    "Decimal.Equal",
+    "Decimal.SameRepresentation"
+  ],
+  "documentation": [
+    "docs/specification-decisions.md",
+    "docs/numeric-model.md"
+  ],
+  "upstream_status": "The source defines the abstract decimal model; accepted Go input grammar remains package policy.",
+  "reconsider_when": "The default parser grammar, parse options, or equality surface changes."
+}
+```
+
+## MATH-DEC-003: Exact and context-rounded arithmetic
+
+The following record is the complete reviewed decision, including consequences,
+evidence, public surface, upstream status, and reconsideration trigger.
+
+Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
+
+```json
+{
+  "id": "MATH-DEC-003",
+  "title": "Exact and context-rounded arithmetic",
+  "status": "resolved",
+  "owner": "go-math maintainers",
+  "classification": "optional behavior",
+  "decision_scope": "application-policy",
+  "specification": "General Decimal Arithmetic 1.70",
+  "version": "General Decimal Arithmetic 1.70",
+  "source_authority": "gda-specification-source",
+  "section": "Arithmetic operations and contexts",
+  "requirement_strength": "not specified",
+  "issue": "The source defines context-governed arithmetic and non-extended operand processing, while a Go API must distinguish exact operations, rounded operations, and unsupported pre-rounding semantics.",
+  "interpretations": [
+    "Apply an implicit context to every operation",
+    "Expose exact operations separately from explicit Context operations and omit non-extended operand pre-rounding"
+  ],
+  "peer_behavior": "APD centers arithmetic on a context, while shopspring/decimal offers finite decimal operations with library-selected division policies.",
+  "selected_behavior": "AddExact, SubExact, and MulExact preserve exact values; QuoExact succeeds only for terminating base-10 results; Context operations round results under explicit precision, exponent, and rounding policy; GDA non-extended operand pre-rounding is not exposed and those corpus cases are skipped.",
+  "rationale": "Separate APIs make precision loss observable and avoid an ambient default context.",
+  "security_consequences": "Callers cannot obtain silently rounded results through exact-operation names.",
+  "resource_consequences": "Exact and rounded operations both apply explicit gomath.Limits before potentially expensive intermediate work.",
+  "compatibility_consequences": "Exact failure behavior, one-result rounding, and the absence of non-extended pre-rounding are stable contracts.",
+  "wire_consequences": "Serialized results reflect the explicitly selected exact or rounded operation; no context metadata is embedded automatically.",
+  "executable_evidence": [
+    "TestDecimalExactArithmeticEdges",
+    "TestDecimalContextRoundsEveryArithmeticOperation",
+    "TestDivisionRequiresExplicitRoundingForRepeatingResults"
+  ],
+  "fixture_evidence": [],
+  "fuzz_evidence": [
+    "FuzzParseContextAndRoundTrip"
+  ],
+  "interoperability_evidence": [],
+  "differential_evidence": [
+    "specification/maintained-peers.json"
+  ],
+  "public_apis": [
+    "Decimal.AddExact",
+    "Decimal.SubExact",
+    "Decimal.MulExact",
+    "Decimal.QuoExact",
+    "Context.Add",
+    "Context.Sub",
+    "Context.Mul",
+    "Context.Quo"
+  ],
+  "documentation": [
+    "docs/specification-decisions.md",
+    "docs/precision.md"
+  ],
+  "upstream_status": "The pinned source retains extended and non-extended arithmetic modes; this package intentionally implements the finite extended-style boundary.",
+  "reconsider_when": "An implicit context, non-extended operand mode, or different exact-division contract is proposed."
+}
+```
+
+## MATH-DEC-004: Precision exponent conditions and traps
+
+The following record is the complete reviewed decision, including consequences,
+evidence, public surface, upstream status, and reconsideration trigger.
+
+Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
+
+```json
+{
+  "id": "MATH-DEC-004",
+  "title": "Precision exponent conditions and traps",
+  "status": "resolved",
+  "owner": "go-math maintainers",
+  "classification": "implementation-defined behavior",
+  "decision_scope": "application-policy",
+  "specification": "General Decimal Arithmetic 1.70",
+  "version": "General Decimal Arithmetic 1.70",
+  "source_authority": "gda-specification-source",
+  "section": "Context, adjusted exponent, status flags, and trap-enablers",
+  "requirement_strength": "not specified",
+  "issue": "The source defines precision, exponent limits, status flags, and traps, while the native API must choose how conditions and trapped Go errors are returned together.",
+  "interpretations": [
+    "Return only an error when a trap fires",
+    "Return the result conditions and a typed error so the triggering condition remains observable"
+  ],
+  "peer_behavior": "APD returns conditions together with errors; peer condition sets and exponent edge behavior vary with supported special values and contexts.",
+  "selected_behavior": "Context precision counts significant decimal digits, exponent bounds use adjusted exponent, operations report package Condition bits, and selected trapped conditions return classified errors while retaining all observed conditions in Result.",
+  "rationale": "Retaining conditions across trap errors preserves the arithmetic diagnostic without requiring hidden context state.",
+  "security_consequences": "Explicit bounds and traps prevent error paths from masking exponent or precision policy.",
+  "resource_consequences": "Precision and exponent checks operate with gomath.Limits and reject work that exceeds configured bounds.",
+  "compatibility_consequences": "Condition bits, adjusted-exponent boundaries, and error-plus-condition behavior are stable public contracts.",
+  "wire_consequences": "Conditions and trap errors are API results and are not automatically serialized with decimal values.",
+  "executable_evidence": [
+    "TestContextReportsRoundingConditions",
+    "TestContextReportsExponentConditions",
+    "TestContextTrapsSelectedConditions"
+  ],
+  "fixture_evidence": [],
+  "fuzz_evidence": [
+    "FuzzParseContextAndRoundTrip"
+  ],
+  "interoperability_evidence": [],
+  "differential_evidence": [
+    "specification/maintained-peers.json"
+  ],
+  "public_apis": [
+    "Context",
+    "Result",
+    "gomath.Condition",
+    "gomath.ErrTrappedCondition"
+  ],
+  "documentation": [
+    "docs/specification-decisions.md",
+    "docs/conditions.md",
+    "docs/precision.md"
+  ],
+  "upstream_status": "The source status model remains pinned; unsupported non-finite and subnormal result categories are recorded separately in corpus applicability.",
+  "reconsider_when": "Condition representation, exponent interpretation, or trap return behavior changes."
+}
+```
+
+## MATH-DEC-005: Seven explicit rounding modes
+
+The following record is the complete reviewed decision, including consequences,
+evidence, public surface, upstream status, and reconsideration trigger.
+
+Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
+
+```json
+{
+  "id": "MATH-DEC-005",
+  "title": "Seven explicit rounding modes",
+  "status": "resolved",
+  "owner": "go-math maintainers",
+  "classification": "optional behavior",
+  "decision_scope": "normative",
+  "specification": "General Decimal Arithmetic 1.70",
+  "version": "General Decimal Arithmetic 1.70",
+  "source_authority": "gda-specification-source",
+  "section": "Rounding algorithms",
+  "requirement_strength": "not specified",
+  "issue": "General Decimal Arithmetic names multiple rounding algorithms and the package must expose an exact supported set with symmetric positive and negative behavior.",
+  "interpretations": [
+    "Expose one default rounding algorithm",
+    "Expose the seven source-defined algorithms supported by the finite decimal implementation"
+  ],
+  "peer_behavior": "APD exposes corresponding rounding names; shopspring/decimal exposes a different rounding surface.",
+  "selected_behavior": "The package supports HalfEven, HalfUp, HalfDown, Down, Up, Ceiling, and Floor with explicit caller selection and no hidden default for operations that require rounding.",
+  "rationale": "The seven named algorithms cover source-defined nearest, directed, and zero-directed policies without inventing ambiguous aliases.",
+  "security_consequences": "Callers cannot obtain a context-sensitive rounding choice from locale or process state.",
+  "resource_consequences": "Every mode uses the same bounded coefficient and exponent preflights.",
+  "compatibility_consequences": "Mode names and positive and negative tie behavior are stable public behavior.",
+  "wire_consequences": "Rounding mode is caller policy and is not embedded in serialized decimal output.",
+  "executable_evidence": [
+    "TestEveryRoundingModeHandlesPositiveAndNegativeTies",
+    "TestGeneralDecimalArithmeticVectors"
+  ],
+  "fixture_evidence": [
+    "specification/gda/rounding0.decTest"
+  ],
+  "fuzz_evidence": [
+    "FuzzParseContextAndRoundTrip"
+  ],
+  "interoperability_evidence": [
+    "specification/gda/rounding0.decTest"
+  ],
+  "differential_evidence": [],
+  "public_apis": [
+    "RoundingMode",
+    "HalfEven",
+    "HalfUp",
+    "HalfDown",
+    "Down",
+    "Up",
+    "Ceiling",
+    "Floor"
+  ],
+  "documentation": [
+    "docs/specification-decisions.md",
+    "docs/precision.md"
+  ],
+  "upstream_status": "The seven algorithms are stable in the pinned General Decimal Arithmetic source.",
+  "reconsider_when": "A rounding mode is added, removed, renamed, or changes tie behavior."
+}
+```
+
+## MATH-DEC-006: Exceptional operations return classified errors
+
+The following record is the complete reviewed decision, including consequences,
+evidence, public surface, upstream status, and reconsideration trigger.
+
+Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
+
+```json
+{
+  "id": "MATH-DEC-006",
+  "title": "Exceptional operations return classified errors",
+  "status": "resolved",
+  "owner": "go-math maintainers",
+  "classification": "implementation-defined behavior",
+  "decision_scope": "application-policy",
+  "specification": "General Decimal Arithmetic 1.70",
+  "version": "General Decimal Arithmetic 1.70",
+  "source_authority": "gda-specification-source",
+  "section": "Exceptional conditions and special results",
+  "requirement_strength": "not specified",
+  "issue": "The source can represent exceptional arithmetic through conditions and non-finite results, but the finite Go value model cannot return NaN or infinity.",
+  "interpretations": [
+    "Add non-finite result values",
+    "Return classified Go errors and retained condition bits for finite-model exceptional operations"
+  ],
+  "peer_behavior": "APD can return non-finite result values plus conditions, while finite decimal peers commonly return errors or panics for exceptional operations.",
+  "selected_behavior": "Division by zero returns gomath.ErrDivisionByZero and ConditionDivisionByZero through Context operations; trapped conditions return gomath.ErrTrappedCondition while retaining Result conditions; non-terminating exact division returns gomath.ErrConversion; cancellation and resource-limit errors remain distinct; no operation manufactures NaN or infinity.",
+  "rationale": "Classified errors preserve the finite value invariant and let callers distinguish arithmetic, cancellation, conversion, trapped-condition, and defensive failures.",
+  "security_consequences": "Exceptional input cannot inject special values into later arithmetic or serialization.",
+  "resource_consequences": "Cancellation and resource rejection remain independently observable and bounded.",
+  "compatibility_consequences": "Error identity, condition retention, and absence of non-finite results are stable behavior.",
+  "wire_consequences": "Exceptional operations have no decimal wire value; callers choose any transport error mapping.",
+  "executable_evidence": [
+    "TestContextTrapsSelectedConditions",
+    "TestResourceCancellationAndArithmeticErrorsRemainDistinct",
+    "TestDivisionRequiresExplicitRoundingForRepeatingResults"
+  ],
+  "fixture_evidence": [],
+  "fuzz_evidence": [
+    "FuzzParseContextAndRoundTrip"
+  ],
+  "interoperability_evidence": [],
+  "differential_evidence": [],
+  "public_apis": [
+    "Result",
+    "gomath.Condition",
+    "gomath.ErrDivisionByZero",
+    "gomath.ErrConversion",
+    "gomath.ErrTrappedCondition",
+    "gomath.ErrLimitExceeded"
+  ],
+  "documentation": [
+    "docs/specification-decisions.md",
+    "docs/conditions.md",
+    "docs/troubleshooting.md"
+  ],
+  "upstream_status": "The source exceptional-result model remains pinned; mapping it into classified Go errors is package policy.",
+  "reconsider_when": "The value type gains non-finite values or public error classification changes."
+}
+```
+
+## MATH-DEC-007: Quantize uses fractional scale
+
+The following record is the complete reviewed decision, including consequences,
+evidence, public surface, upstream status, and reconsideration trigger.
+
+Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
+
+```json
+{
+  "id": "MATH-DEC-007",
+  "title": "Quantize uses fractional scale",
+  "status": "resolved",
+  "owner": "go-math maintainers",
+  "classification": "implementation-defined behavior",
+  "decision_scope": "application-policy",
+  "specification": "General Decimal Arithmetic 1.70",
+  "version": "General Decimal Arithmetic 1.70",
+  "source_authority": "gda-specification-source",
+  "section": "quantize operation",
+  "requirement_strength": "not specified",
+  "issue": "General Decimal Arithmetic quantize selects a target exponent from a second operand, while the Go API names a scale in fractional decimal places.",
+  "interpretations": [
+    "Expose a second decimal operand exactly like the source operation",
+    "Map public scale to target exponent as exponent = -scale and support negative scale"
+  ],
+  "peer_behavior": "APD quantize accepts a target exponent; shopspring/decimal primarily exposes place-count rounding APIs.",
+  "selected_behavior": "Decimal.Quantize interprets scale as fractional decimal places, maps it to target exponent -scale, supports negative scale for positions left of the decimal point, and QuantizedQuo rounds once at the requested scale.",
+  "rationale": "A named fractional scale matches Go caller use while preserving an exact documented mapping to source exponent semantics.",
+  "security_consequences": "Extreme scales are rejected by explicit resource and exponent limits before allocation.",
+  "resource_consequences": "Scale adjustment and one-round division are bounded by gomath.Limits.",
+  "compatibility_consequences": "Scale sign, target exponent mapping, and single-rounding quotient behavior are stable.",
+  "wire_consequences": "Quantized output carries the resulting decimal exponent but no separate scale metadata.",
+  "executable_evidence": [
+    "TestQuantizeUsesExplicitFractionalScale",
+    "TestQuantizedQuoRoundsOnceAtTheRequestedScale",
+    "TestGeneralDecimalArithmeticVectors"
+  ],
+  "fixture_evidence": [
+    "specification/gda/quantize0.decTest"
+  ],
+  "fuzz_evidence": [
+    "FuzzParseContextAndRoundTrip"
+  ],
+  "interoperability_evidence": [
+    "specification/gda/quantize0.decTest"
+  ],
+  "differential_evidence": [
+    "specification/maintained-peers.json"
+  ],
+  "public_apis": [
+    "Decimal.Quantize",
+    "QuantizedQuo"
+  ],
+  "documentation": [
+    "docs/specification-decisions.md",
+    "docs/precision.md",
+    "docs/cookbook.md"
+  ],
+  "upstream_status": "The source quantize exponent contract remains pinned; the fractional-scale API is a deliberate package mapping.",
+  "reconsider_when": "Scale sign, exponent mapping, or rounding placement changes."
+}
+```
+
+## MATH-DEC-008: Pinned corpus applicability and accounting
+
+The following record is the complete reviewed decision, including consequences,
+evidence, public surface, upstream status, and reconsideration trigger.
+
+Authoritative URL: <https://speleotrove.com/decimal/dectest.zip>
+
+Additional authoritative source: `{"id":"gda-testcases-subset-source","version":"General Decimal Arithmetic Testcases 2.62","url":"https://speleotrove.com/decimal/dectest0.zip","specifications":["General Decimal Arithmetic Testcases 2.62"]}`
+
+Additional authoritative source: `{"id":"gda-testcases-documentation","version":"General Decimal Arithmetic Testcases documentation 2.44","url":"https://speleotrove.com/decimal/dectest.html","specifications":["General Decimal Arithmetic Testcases 2.62"]}`
+
+```json
+{
+  "id": "MATH-DEC-008",
+  "title": "Pinned corpus applicability and accounting",
+  "status": "resolved",
+  "owner": "go-math maintainers",
+  "classification": "interoperability policy",
+  "decision_scope": "recommended",
+  "specification": "General Decimal Arithmetic Testcases 2.62",
+  "version": "General Decimal Arithmetic Testcases 2.62",
+  "source_authority": "gda-testcases-source",
+  "section": "dectest.zip and dectest0.zip operation files",
+  "requirement_strength": "informative",
+  "issue": "The official corpus covers a wider abstract decimal model than this finite extended-style package, so every vendored file, executed vector, skipped vector, and transformation must be attributable without overstating conformance.",
+  "interpretations": [
+    "Count only passing vectors and ignore unsupported records",
+    "Pin both archives, preserve exact file accounting, document LF normalization, and classify unsupported records as explicit skips"
+  ],
+  "peer_behavior": "Decimal libraries run different corpus subsets and frequently omit unsupported syntax or special values; those counts are not comparable without an explicit applicability boundary.",
+  "selected_behavior": "The repository vendors non-0 operation files from dectest.zip and 0-suffixed, quantize0, and rounding0 files from dectest0.zip after CRLF-to-LF normalization; the harness executes 3547 vectors and explicitly skips 1542 for non-finite syntax, unsupported exceptional representations or conditions, non-extended operand pre-rounding, parse failures, or operation failures; passing vectors are not a broad standards certification.",
+  "rationale": "Exact archive provenance and enforced accounting expose the supported semantic slice and prevent silent corpus shrinkage.",
+  "security_consequences": "Pinned digests prevent silent fixture substitution and skipped hostile grammar remains visible rather than entering unsupported value paths.",
+  "resource_consequences": "Only finite applicable vectors run; the bounded harness does not attempt unsupported special-value or unbounded operand semantics.",
+  "compatibility_consequences": "Any vector, skip count, source archive, transformation, or applicability change requires a reviewed decision digest.",
+  "wire_consequences": "The corpus does not define a package wire format and passing it does not imply wire compatibility beyond named operations.",
+  "executable_evidence": [
+    "TestGeneralDecimalArithmeticVectors"
+  ],
+  "fixture_evidence": [
+    "specification/gda/add.decTest",
+    "specification/gda/add0.decTest",
+    "specification/gda/subtract.decTest",
+    "specification/gda/subtract0.decTest",
+    "specification/gda/multiply.decTest",
+    "specification/gda/multiply0.decTest",
+    "specification/gda/divide.decTest",
+    "specification/gda/divide0.decTest",
+    "specification/gda/quantize0.decTest",
+    "specification/gda/rounding0.decTest"
+  ],
+  "fuzz_evidence": [],
+  "interoperability_evidence": [
+    "specification/gda/add.decTest",
+    "specification/gda/subtract.decTest",
+    "specification/gda/multiply.decTest",
+    "specification/gda/divide.decTest",
+    "specification/gda/quantize0.decTest",
+    "specification/gda/rounding0.decTest"
+  ],
+  "differential_evidence": [],
+  "public_apis": [
+    "Context.Add",
+    "Context.Sub",
+    "Context.Mul",
+    "Context.Quo",
+    "Decimal.Quantize",
+    "RoundingMode"
+  ],
+  "documentation": [
+    "docs/specification-decisions.md",
+    "specification/README.md",
+    "specification/gda/README.md",
+    "docs/verification.md"
+  ],
+  "upstream_status": "General Decimal Arithmetic Testcases 2.62 is pinned from both 19 April 2010 archives; the testcase documentation page identifies version 2.44 dated 7 April 2009.",
+  "reconsider_when": "The corpus, harness applicability rules, archive transformation, executed count, or skipped count changes."
+}
+```
+
+## MATH-DEC-009: Defensive limits and synchronous cancellation
+
+The following record is the complete reviewed decision, including consequences,
+evidence, public surface, upstream status, and reconsideration trigger.
+
+Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
+
+```json
+{
+  "id": "MATH-DEC-009",
+  "title": "Defensive limits and synchronous cancellation",
+  "status": "resolved",
+  "owner": "go-math maintainers",
+  "classification": "omission",
+  "decision_scope": "defensive",
+  "specification": "General Decimal Arithmetic 1.70",
+  "version": "General Decimal Arithmetic 1.70",
+  "source_authority": "gda-specification-source",
+  "section": "Implementation constraints outside the arithmetic model",
+  "requirement_strength": "not specified",
+  "issue": "The arithmetic source does not define Go cancellation, allocation budgets, digit limits, bit limits, or intermediate-work limits for hostile inputs.",
+  "interpretations": [
+    "Permit work until host memory or time is exhausted",
+    "Require explicit gomath.Limits and synchronous context.Context checks at potentially expensive boundaries"
+  ],
+  "peer_behavior": "APD exposes context arithmetic limits but peer libraries use different cancellation and allocation policies; no peer contract substitutes for package defenses.",
+  "selected_behavior": "Potentially expensive parsing and arithmetic accept explicit gomath.Limits, synchronous operations observe context.Context cancellation, and cancellation, arithmetic errors, and resource-limit errors remain distinct.",
+  "rationale": "Caller-visible deterministic bounds prevent attacker-controlled numeric size from becoming ambient memory or CPU policy.",
+  "security_consequences": "Digit, bit, exponent, and intermediate limits fail closed before runaway work.",
+  "resource_consequences": "All guarded operations remain synchronous and bounded by caller-selected or documented default limits.",
+  "compatibility_consequences": "Limit enforcement and error classification are public behavior; tightening defaults requires compatibility review.",
+  "wire_consequences": "Oversized wire input is rejected rather than truncated or partially decoded.",
+  "executable_evidence": [
+    "TestResourceCancellationAndArithmeticErrorsRemainDistinct",
+    "TestDecimalResourceBoundaries",
+    "TestDecimalOperationsRejectOversizedOperandsBeforeShortcuts"
+  ],
+  "fixture_evidence": [],
+  "fuzz_evidence": [
+    "FuzzParseContextAndRoundTrip",
+    "FuzzJSONDecoding",
+    "FuzzBinaryDecoders"
+  ],
+  "interoperability_evidence": [],
+  "differential_evidence": [],
+  "public_apis": [
+    "Limits",
+    "DefaultLimits",
+    "ParseOptions.Limits",
+    "Context.Limits"
+  ],
+  "documentation": [
+    "docs/specification-decisions.md",
+    "docs/security.md",
+    "docs/troubleshooting.md"
+  ],
+  "upstream_status": "No General Decimal Arithmetic requirement defines this defensive Go execution policy.",
+  "reconsider_when": "A limit, default budget, cancellation point, or resource error category changes."
+}
+```
+
+## MATH-DEC-010: Canonical text JSON and binary serialization
+
+The following record is the complete reviewed decision, including consequences,
+evidence, public surface, upstream status, and reconsideration trigger.
+
+Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
+
+```json
+{
+  "id": "MATH-DEC-010",
+  "title": "Canonical text JSON and binary serialization",
+  "status": "resolved",
+  "owner": "go-math maintainers",
+  "classification": "omission",
+  "decision_scope": "application-policy",
+  "specification": "General Decimal Arithmetic 1.70",
+  "version": "General Decimal Arithmetic 1.70",
+  "source_authority": "gda-specification-source",
+  "section": "String conversion and package wire formats",
+  "requirement_strength": "not specified",
+  "issue": "The arithmetic source describes decimal strings but does not choose this package's canonical Go text, JSON token type, or deterministic binary framing.",
+  "interpretations": [
+    "Serialize through floating point or JSON numbers",
+    "Use canonical non-exponent text, JSON strings, and a versioned deterministic binary representation"
+  ],
+  "peer_behavior": "Decimal peers differ on exponent formatting, trailing zeros, JSON numbers versus strings, and binary encodings.",
+  "selected_behavior": "Text uses canonical non-exponent decimal notation without float64 conversion, JSON encodes decimal values as strings, and encoding codecs use a versioned deterministic binary representation that rejects non-canonical, oversized, wrong-kind, wrong-version, and trailing input.",
+  "rationale": "String JSON preserves arbitrary precision and a versioned canonical binary frame makes equality, hashing, and upgrades deterministic.",
+  "security_consequences": "Decoders reject ambiguous, oversized, and trailing data before constructing values.",
+  "resource_consequences": "Text and binary rendering and decoding use explicit output and input limits.",
+  "compatibility_consequences": "Canonical text, JSON string shape, binary version, kind tags, and rejection rules are stable wire contracts.",
+  "wire_consequences": "Decimal JSON tokens are strings and deterministic binary frames are versioned; neither format carries rounding context.",
+  "executable_evidence": [
+    "TestTextAndJSONNeverUseFloatingPoint",
+    "TestBinaryCodecsRoundTripDeterministically",
+    "TestBinaryCodecsRejectNonCanonicalAndOversizedValues"
+  ],
+  "fixture_evidence": [],
+  "fuzz_evidence": [
+    "FuzzJSONDecoding",
+    "FuzzBinaryDecoders"
+  ],
+  "interoperability_evidence": [],
+  "differential_evidence": [],
+  "public_apis": [
+    "Decimal.String",
+    "Decimal.MarshalText",
+    "Decimal.MarshalJSON",
+    "encoding.MarshalDecimal",
+    "encoding.UnmarshalDecimal"
+  ],
+  "documentation": [
+    "docs/specification-decisions.md",
+    "docs/serialization.md"
+  ],
+  "upstream_status": "General Decimal Arithmetic does not define the package JSON or binary formats; those are explicitly package-owned.",
+  "reconsider_when": "Canonical text, JSON token type, binary version, or decoder acceptance changes."
+}
+```
+
+## MATH-DEC-011: Maintained peer differential policy
+
+The following record is the complete reviewed decision, including consequences,
+evidence, public surface, upstream status, and reconsideration trigger.
+
+Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
+
+```json
+{
+  "id": "MATH-DEC-011",
+  "title": "Maintained peer differential policy",
+  "status": "resolved",
+  "owner": "go-math maintainers",
+  "classification": "interoperability policy",
+  "decision_scope": "recommended",
+  "specification": "General Decimal Arithmetic 1.70",
+  "version": "General Decimal Arithmetic 1.70",
+  "source_authority": "gda-specification-source",
+  "section": "Independent implementation evidence",
+  "requirement_strength": "informative",
+  "issue": "Official fixtures do not expose every implementation disagreement, while maintained peers overlap only part of the package's finite decimal behavior.",
+  "interpretations": [
+    "Treat majority peer behavior as normative",
+    "Compare a pinned overlapping semantic slice and classify disagreements without voting"
+  ],
+  "peer_behavior": "APD v3.2.3 overlaps context add, subtract, multiply, divide, quantize, and shared Rounded and Inexact conditions; shopspring/decimal v1.4.0 overlaps exact add, subtract, and multiply.",
+  "selected_behavior": "TestDecimalDifferentialAgainstAPDAndShopspring checks 61 operand pairs, 305 APD value-and-shared-condition comparisons, and 183 shopspring exact-value comparisons, for 488 maintained-peer comparisons; parsing grammar, non-finite values, signed zero, overflow, underflow, subnormal, clamped behavior, traps, error categories, serialization, defensive limits, cancellation, and corpus skip classification remain explicit gaps; disagreements are classified rather than decided by majority vote.",
+  "rationale": "Pinned overlapping peers provide independent defect evidence while explicit gaps prevent comparison counts from becoming a conformance claim.",
+  "security_consequences": "Peer agreement cannot weaken defensive limits or introduce peer-specific permissive parsing.",
+  "resource_consequences": "The fixed 61-pair test grid is deterministic and bounded; production modules do not depend on either peer.",
+  "compatibility_consequences": "Changing peer versions, overlap, comparison counts, or gap classification requires review and a new decision digest.",
+  "wire_consequences": "The peer lane does not compare serialization and makes no wire compatibility claim.",
+  "executable_evidence": [
+    "TestDecimalDifferentialAgainstAPDAndShopspring"
+  ],
+  "fixture_evidence": [],
+  "fuzz_evidence": [],
+  "interoperability_evidence": [],
+  "differential_evidence": [
+    "specification/maintained-peers.json"
+  ],
+  "public_apis": [
+    "Context.Add",
+    "Context.Sub",
+    "Context.Mul",
+    "Context.Quo",
+    "Decimal.Quantize",
+    "Decimal.AddExact",
+    "Decimal.SubExact",
+    "Decimal.MulExact"
+  ],
+  "documentation": [
+    "docs/specification-decisions.md",
+    "specification/README.md",
+    "docs/verification.md"
+  ],
+  "upstream_status": "The peer versions are pinned test-only dependencies in go.mod; no upstream disagreement is currently recorded.",
+  "reconsider_when": "A peer version, compared operation, condition mapping, operand corpus, disagreement, or explicit gap changes."
+}
+```
