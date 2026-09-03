@@ -7,9 +7,9 @@
 - Use the released `go-library-tools` v1.2.0 CLI and immutable merged
   workflow at `1f9629e5f27418600460b55a50a5b2fc81697fab` while preserving
   package policy and content-addressed verification evidence.
-- Adopt the checksum-verified `go-library-tools` v1.3.0 CLI, schema-v2 cohesion
-  metadata, and repository-local cohesion gate while retaining package-owned
-  source and evidence.
+- Adopt the checksum-verified `go-library-tools` v1.4.0 CLI, schema-v2 cohesion
+  metadata, repository-local cohesion gate, and immutable W14-enforcement
+  workflow while retaining package-owned source, decisions, and evidence.
 - Make architecture verification portable to CI runners without `ripgrep` and
   restrict it to repository-owned Go sources.
 - Remove the sibling-checkout compatibility command; reverse consumers now
@@ -34,7 +34,7 @@
   - MATH-DEC-011 sha256:a1015e23bedf4dbf62a3ffbe2f0d43520ee6fa21abcfb4b12bf53935774f53c8
 - Replace archived monorepo links and completed execution artifacts with a
   standalone, human-oriented documentation structure.
-- Link the module to the immutable v1.3.0 Golib ecosystem guidance and expose
+- Link the module to the immutable v1.4.0 Golib ecosystem guidance and expose
   the repository-local cohesion command in its contributor entry point.
 
 ## 1.0.0 - 2026-08-25

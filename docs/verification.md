@@ -3,8 +3,8 @@
 `make check` runs formatting, module tidiness, vet, architecture policy, tests,
 race detection, exact production coverage, fuzz smoke, mutation checks,
 examples, consumer compatibility, benchmarks, docs, API compatibility, lint,
-static analysis, and vulnerability analysis. `make check-all` additionally
-runs advisory NilAway.
+static analysis, vulnerability analysis, and advisory NilAway. `make ci` adds
+the repository and cohesion contracts.
 
 The test suite includes algebraic laws, direct `math/big` comparisons,
 independent `apd` and `shopspring/decimal` comparisons, applicable General
