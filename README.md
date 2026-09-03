@@ -32,6 +32,9 @@ See the [documentation index](docs/README.md),
 [specification decisions](docs/specification-decisions.md),
 [cookbook](docs/cookbook.md), and [verification guide](docs/verification.md).
 The minimum supported toolchain is Go 1.26.6.
+See the versioned [Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)
+and [package-family selection guidance](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/design-language.md#package-families-and-selection)
+for the shared design language this module follows.
 
 ## Packages
 
@@ -46,9 +49,10 @@ The minimum supported toolchain is Go 1.26.6.
 
 ## Development
 
-Run `make check` for blocking local gates and `make check-all` to include the
-advisory NilAway analysis. See [CHANGELOG.md](CHANGELOG.md) for releases and
-[SECURITY.md](SECURITY.md) for vulnerability reporting.
+Run `make cohesion` for the repository-owned cohesion contract, `make check`
+for package gates, and `make ci` for the complete repository contract. See
+[CHANGELOG.md](CHANGELOG.md) for releases and [SECURITY.md](SECURITY.md) for
+vulnerability reporting.
 
 Licensed under MIT.
 

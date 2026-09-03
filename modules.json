@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "repository": "github.com/faustbrian/go-math",
   "go_version": "1.26.6",
   "modules": [
@@ -101,6 +101,93 @@
       "family_label": "Domain Utilities",
       "family_description": "Domain-specific immutable values, algorithms, parsers, proofs, and calculations.",
       "family_order": 8,
+      "cohesion": {
+        "family": "domain-utilities",
+        "secondary_capabilities": [
+          "data-encoding",
+          "testing-and-conformance"
+        ],
+        "responsibility": "Provide immutable arbitrary-precision integer, rational, decimal, and binary-float values with explicit precision, rounding, limits, conditions, and deterministic encodings.",
+        "non_goals": [
+          "Replace built-in numeric types when their fixed width and machine arithmetic are sufficient.",
+          "Own money, measurement, currency, unit, locale, or presentation policy.",
+          "Hide precision, rounding, trap, resource-limit, or retry policy from callers."
+        ],
+        "public_package_identifier": "gomath",
+        "primary_entry_packages": [
+          "github.com/faustbrian/go-math"
+        ],
+        "package_selection": {
+          "github.com/faustbrian/go-math": "Use for shared numeric limits, rounding modes, conditions, and classified errors.",
+          "github.com/faustbrian/go-math/bigfloat": "Use for bounded explicitly inexact arbitrary-precision binary floating-point operations.",
+          "github.com/faustbrian/go-math/decimal": "Use for finite base-10 values, exact operations, or context-rounded decimal arithmetic.",
+          "github.com/faustbrian/go-math/encoding": "Use for deterministic versioned binary encodings of go-math values.",
+          "github.com/faustbrian/go-math/integer": "Use for bounded arbitrary-precision signed integer arithmetic and injected-source random values.",
+          "github.com/faustbrian/go-math/mathtest": "Use in tests for reusable algebraic-law and round-trip assertions.",
+          "github.com/faustbrian/go-math/rational": "Use for normalized exact fractions and bounded decimal conversion."
+        },
+        "lifecycle_status": "active",
+        "maturity": "stable",
+        "construction_styles": [
+          "must-helper",
+          "plain-function",
+          "validated-value"
+        ],
+        "lifecycle_styles": [
+          "stateless"
+        ],
+        "ownership": {
+          "configuration": "caller",
+          "mutable_inputs": [
+            "borrow",
+            "copy"
+          ],
+          "runtime_resources": "caller",
+          "background_work": "none"
+        },
+        "optional_owned_dependencies": [],
+        "adapters": [],
+        "companions": [
+          "github.com/faustbrian/go-math/bigfloat",
+          "github.com/faustbrian/go-math/decimal",
+          "github.com/faustbrian/go-math/encoding",
+          "github.com/faustbrian/go-math/integer",
+          "github.com/faustbrian/go-math/mathtest",
+          "github.com/faustbrian/go-math/rational"
+        ],
+        "supported_go": {
+          "minimum": "1.26.6",
+          "tested": [
+            "1.26.6"
+          ]
+        },
+        "supported_platforms": [
+          "portable-go"
+        ],
+        "supported_backends": [],
+        "supported_protocols": [
+          "golib-math-binary-v1"
+        ],
+        "documentation": {
+          "readme": "README.md",
+          "api": "https://pkg.go.dev/github.com/faustbrian/go-math",
+          "adoption": "docs/cookbook.md",
+          "security": "docs/security.md",
+          "compatibility": "docs/compatibility.md",
+          "performance": "docs/performance.md",
+          "examples": "example_test.go",
+          "faq": "docs/faq.md",
+          "changelog": "CHANGELOG.md",
+          "pkg_go_dev": "https://pkg.go.dev/github.com/faustbrian/go-math",
+          "ecosystem_index": "https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md"
+        },
+        "known_good_compatibility_sets": [],
+        "delivery": {
+          "implementation": "not-started",
+          "hardening": "not-started",
+          "release": "not-started"
+        }
+      },
       "version": "1.0.0",
       "tag_prefix": "v",
       "owned_dependencies": [],
