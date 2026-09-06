@@ -29,6 +29,9 @@ var (
 	ErrTrappedCondition = errors.New("math: trapped condition")
 )
 
+// ErrRandomSource reports a failure from a caller-provided random source.
+var ErrRandomSource = errors.New("math: random source failed")
+
 // Condition is a bit set of arithmetic conditions.
 type Condition uint16
 

@@ -3,6 +3,8 @@ package decimal_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"strings"
 	"testing"
 
 	gomath "github.com/faustbrian/go-math"
@@ -10,7 +12,10 @@ import (
 )
 
 func FuzzParseContextAndRoundTrip(f *testing.F) {
-	for _, seed := range []string{"0", "-1.25", "1e10", "0.000001"} {
+	for _, seed := range []string{
+		"0", "-1.25", "1e10", "0.000001", strings.Repeat("9", 256),
+		strings.Repeat("9", 257), "12x4e2147483648", "1e+0000000000x",
+	} {
 		f.Add(seed, uint8(9))
 	}
 	f.Fuzz(func(t *testing.T, input string, precisionByte uint8) {
@@ -26,6 +31,7 @@ func FuzzParseContextAndRoundTrip(f *testing.F) {
 			Limits:            limits,
 		})
 		if err != nil {
+			assertFuzzDecimalError(t, err)
 			return
 		}
 		roundTripLimits := limits
@@ -53,6 +59,24 @@ func FuzzParseContextAndRoundTrip(f *testing.F) {
 			t.Fatalf("JSON round trip changed %s: %v", value, err)
 		}
 	})
+}
+
+func assertFuzzDecimalError(t *testing.T, err error) {
+	t.Helper()
+	if len(err.Error()) > 128 {
+		t.Fatalf("unbounded parser diagnostic of %d bytes", len(err.Error()))
+	}
+	matches := 0
+	for _, category := range []error{
+		gomath.ErrInvalidArgument, gomath.ErrInvalidSyntax, gomath.ErrLimitExceeded,
+	} {
+		if errors.Is(err, category) {
+			matches++
+		}
+	}
+	if matches != 1 {
+		t.Fatalf("parser error matches %d terminal categories: %v", matches, err)
+	}
 }
 
 func FuzzJSONDecoding(f *testing.F) {

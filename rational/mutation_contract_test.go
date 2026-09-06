@@ -37,10 +37,13 @@ func TestConstructionAndParseResourceBoundaries(t *testing.T) {
 
 	parseLimits := gomath.DefaultLimits()
 	parseLimits.MaxInputDigits = 2
-	for _, input := range []string{"", " 1", "1 ", "1/2/3", "123", "00"} {
+	for _, input := range []string{"", " 1", "1 ", "1/2/3", "00"} {
 		if _, err := Parse(input, parseLimits); !errors.Is(err, gomath.ErrInvalidSyntax) {
 			t.Fatalf("Parse(%q) error = %v, want invalid syntax", input, err)
 		}
+	}
+	if _, err := Parse("123", parseLimits); !errors.Is(err, gomath.ErrLimitExceeded) {
+		t.Fatalf("Parse(%q) error = %v, want limit exceeded", "123", err)
 	}
 	for input, want := range map[string]string{"0": "0", "-0": "0", "99": "99", "-9": "-9", "1/7": "1/7"} {
 		got, err := Parse(input, parseLimits)

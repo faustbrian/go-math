@@ -6,6 +6,7 @@
 - [Precision and rounding](precision.md)
 - [Conditions and traps](conditions.md)
 - [Cookbook](cookbook.md)
+- [Executable examples](../example_test.go)
 - [Specification decisions](specification-decisions.md)
 
 ## Reference and operations
@@ -17,6 +18,8 @@
 - [Compatibility](compatibility.md)
 - [FAQ](faq.md)
 - [Troubleshooting](troubleshooting.md)
+- [Support](../SUPPORT.md)
+- [Security reporting](../SECURITY.md)
 
 ## Maintainers
 

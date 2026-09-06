@@ -48,6 +48,10 @@ func TestErrorMessagesUseCanonicalPackageName(t *testing.T) {
 			err:  gomath.ErrLimitExceeded,
 			want: "math: resource limit exceeded",
 		},
+		"random source": {
+			err:  gomath.ErrRandomSource,
+			want: "math: random source failed",
+		},
 		"division by zero": {
 			err:  gomath.ErrDivisionByZero,
 			want: "math: division by zero",

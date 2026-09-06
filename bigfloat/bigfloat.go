@@ -89,18 +89,21 @@ func Parse(text string, base int, operation Context) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	if text == "" {
-		return Result{}, gomath.ErrInvalidSyntax
-	}
-	if strings.TrimSpace(text) != text || len(text) > limits.MaxInputDigits {
-		return Result{}, gomath.ErrInvalidSyntax
-	}
 	if base != 0 && base != 2 && base != 10 && base != 16 {
 		return Result{}, fmt.Errorf("%w: float base", gomath.ErrInvalidArgument)
 	}
+	if text == "" {
+		return Result{}, gomath.ErrInvalidSyntax
+	}
+	if len(text) > limits.MaxInputDigits {
+		return Result{}, fmt.Errorf("%w: binary float input", gomath.ErrLimitExceeded)
+	}
+	if strings.TrimSpace(text) != text {
+		return Result{}, gomath.ErrInvalidSyntax
+	}
 	value, _, err := big.ParseFloat(text, base, operation.Precision, mode)
 	if err != nil {
-		return Result{}, fmt.Errorf("%w: binary float", gomath.ErrInvalidSyntax)
+		return Result{}, gomath.ErrInvalidSyntax
 	}
 
 	return operation.finish(value, value.Acc(), limits)

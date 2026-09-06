@@ -34,7 +34,7 @@ func TestParserRejectsHostileInputAtConfiguredLimit(t *testing.T) {
 		want  error
 	}{
 		{strings.Repeat("9", 1<<20), gomath.ErrLimitExceeded},
-		{strings.Repeat(".", 1<<20), decimal.ErrInvalid},
+		{strings.Repeat(".", 1<<20), gomath.ErrLimitExceeded},
 	} {
 		if _, err := decimal.ParseWithOptions(test.input, decimal.ParseOptions{Limits: limits}); !errors.Is(err, test.want) {
 			t.Fatalf("ParseWithOptions(hostile input) error = %v, want %v", err, test.want)

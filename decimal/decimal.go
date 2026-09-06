@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -108,6 +107,9 @@ func ParseWithOptions(input string, options ParseOptions) (Decimal, error) {
 	if err := options.Limits.Validate(); err != nil {
 		return Decimal{}, err
 	}
+	if len(input) > saturatedTwicePlus(options.Limits.MaxInputDigits, 64) {
+		return Decimal{}, fmt.Errorf("%w: decimal input bytes", gomath.ErrLimitExceeded)
+	}
 	if input == "" {
 		return Decimal{}, ErrInvalid
 	}
@@ -135,32 +137,9 @@ func ParseWithOptions(input string, options ParseOptions) (Decimal, error) {
 		return Decimal{}, ErrInvalid
 	}
 
-	mantissa, parsedExponent, err := splitExponent(input, options)
+	digits, fractionCount, parsedExponent, err := scanParsedDecimal(input, options)
 	if err != nil {
 		return Decimal{}, err
-	}
-	integerPart, fractionPart, hasFraction := strings.Cut(mantissa, ".")
-	if hasFraction && strings.Contains(fractionPart, ".") {
-		return Decimal{}, ErrInvalid
-	}
-	integerDigits, integerCount, err := cleanDigits(
-		integerPart, options.AllowUnderscores, options.Limits.MaxInputDigits,
-	)
-	if err != nil {
-		return Decimal{}, err
-	}
-	if !options.AllowLeadingZeros && integerCount > 1 && integerDigits[0] == '0' {
-		return Decimal{}, ErrInvalid
-	}
-	fractionDigits := ""
-	fractionCount := 0
-	if hasFraction {
-		fractionDigits, fractionCount, err = cleanDigits(
-			fractionPart, options.AllowUnderscores, options.Limits.MaxInputDigits-integerCount,
-		)
-		if err != nil {
-			return Decimal{}, err
-		}
 	}
 	exponent64 := int64(parsedExponent) - int64(fractionCount)
 	exponent, err := checkedExponent(exponent64, options.Limits.MaxExponentMagnitude)
@@ -168,7 +147,7 @@ func ParseWithOptions(input string, options ParseOptions) (Decimal, error) {
 		return Decimal{}, err
 	}
 	var coefficient big.Int
-	coefficient.SetString(integerDigits+fractionDigits, 10)
+	coefficient.SetString(digits, 10)
 	if negative {
 		coefficient.Neg(&coefficient)
 	}
@@ -948,67 +927,126 @@ func removeFactor(value *big.Int, factor int64) uint32 {
 	}
 }
 
-func splitExponent(input string, options ParseOptions) (string, int32, error) {
-	index := strings.IndexAny(input, "eE")
-	if index < 0 {
-		return input, 0, nil
-	}
-	if !options.AllowExponent || strings.ContainsAny(input[index+1:], "eE") {
-		return "", 0, ErrInvalid
-	}
-	mantissa, exponentText := input[:index], input[index+1:]
-	if mantissa == "" || exponentText == "" {
-		return "", 0, ErrInvalid
-	}
-	exponent, err := strconv.ParseInt(exponentText, 10, 32)
-	if err != nil {
-		if errorsIsRange(err) {
-			return "", 0, fmt.Errorf("%w: decimal exponent", ErrLimit)
-		}
-		return "", 0, ErrInvalid
-	}
-	checked, err := checkedExponent(exponent, options.Limits.MaxExponentMagnitude)
-	if err != nil {
-		return "", 0, err
-	}
-
-	return mantissa, checked, nil
-}
-
-func cleanDigits(input string, allowUnderscores bool, maximum int) (string, int, error) {
-	var builder strings.Builder
-	builder.Grow(min(len(input), maximum))
+func scanParsedDecimal(input string, options ParseOptions) (string, int, int32, error) {
+	hasIntegerDigits := false
+	fractionCount := 0
+	totalDigits := 0
+	hasFraction := false
 	previousUnderscore := false
+	leadingZero := false
+	exponentStart := -1
 	for index := 0; index < len(input); index++ {
 		character := input[index]
+		if character == 'e' || character == 'E' {
+			if !options.AllowExponent || previousUnderscore || !hasIntegerDigits ||
+				(hasFraction && fractionCount == 0) {
+				return "", 0, 0, ErrInvalid
+			}
+			exponentStart = index + 1
+			break
+		}
+		if character == '.' {
+			if hasFraction || previousUnderscore || !hasIntegerDigits {
+				return "", 0, 0, ErrInvalid
+			}
+			hasFraction = true
+			continue
+		}
 		if character == '_' {
-			if !allowUnderscores || index == 0 || index == len(input)-1 || previousUnderscore {
-				return "", 0, ErrInvalid
+			componentHasDigits := hasIntegerDigits
+			if hasFraction {
+				componentHasDigits = fractionCount > 0
+			}
+			if !options.AllowUnderscores || previousUnderscore || !componentHasDigits {
+				return "", 0, 0, ErrInvalid
 			}
 			previousUnderscore = true
 			continue
 		}
 		if character < '0' || character > '9' {
-			return "", 0, ErrInvalid
+			return "", 0, 0, ErrInvalid
 		}
-		if builder.Len() >= maximum {
-			return "", 0, fmt.Errorf("%w: decimal input digits", ErrLimit)
+		if !hasFraction {
+			if leadingZero && !options.AllowLeadingZeros {
+				return "", 0, 0, ErrInvalid
+			}
+			if !hasIntegerDigits {
+				leadingZero = character == '0'
+			}
+			hasIntegerDigits = true
+		} else {
+			fractionCount++
 		}
-		builder.WriteByte(character)
+		if totalDigits >= options.Limits.MaxInputDigits {
+			return "", 0, 0, fmt.Errorf("%w: decimal input digits", ErrLimit)
+		}
+		totalDigits++
 		previousUnderscore = false
 	}
-
-	if builder.Len() == 0 {
-		return "", 0, ErrInvalid
+	if previousUnderscore || !hasIntegerDigits || (hasFraction && fractionCount == 0) {
+		return "", 0, 0, ErrInvalid
+	}
+	mantissaEnd := len(input)
+	if exponentStart != -1 {
+		mantissaEnd = exponentStart - 1
+	}
+	var digits strings.Builder
+	digits.Grow(totalDigits)
+	for index := 0; index < mantissaEnd; index++ {
+		character := input[index]
+		if character >= '0' && character <= '9' {
+			digits.WriteByte(character)
+		}
+	}
+	if exponentStart == -1 {
+		return digits.String(), fractionCount, 0, nil
+	}
+	exponent, err := scanDecimalExponent(input[exponentStart:], options.Limits.MaxExponentMagnitude)
+	if err != nil {
+		return "", 0, 0, err
 	}
 
-	return builder.String(), builder.Len(), nil
+	return digits.String(), fractionCount, exponent, nil
 }
 
-func errorsIsRange(err error) bool {
-	var numberError *strconv.NumError
+func scanDecimalExponent(input string, maximum int32) (int32, error) {
+	if input == "" {
+		return 0, ErrInvalid
+	}
+	tokenBytes := 0
+	index := 0
+	if input[0] == '+' || input[0] == '-' {
+		tokenBytes++
+		index++
+	}
+	if index == len(input) {
+		return 0, ErrInvalid
+	}
+	for ; index < len(input); index++ {
+		if tokenBytes >= 11 {
+			return 0, fmt.Errorf("%w: decimal exponent", ErrLimit)
+		}
+		character := input[index]
+		if character < '0' || character > '9' {
+			return 0, ErrInvalid
+		}
+		tokenBytes++
+	}
+	exponent, err := strconv.ParseInt(input, 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("%w: decimal exponent", ErrLimit)
+	}
 
-	return errors.As(err, &numberError) && numberError.Err == strconv.ErrRange
+	return checkedExponent(exponent, maximum)
+}
+
+func saturatedTwicePlus(value, overhead int) int {
+	maximum := int(^uint(0) >> 1)
+	if value > (maximum-overhead)/2 {
+		return maximum
+	}
+
+	return 2*value + overhead
 }
 
 func decimalDigits(value *big.Int) int { return len(new(big.Int).Abs(value).String()) }

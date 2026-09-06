@@ -18,6 +18,17 @@ func TestInternalBoundaryBranches(t *testing.T) {
 	if !validInteger("-1", 1) || validInteger("", 1) {
 		t.Fatal("integer grammar mismatch")
 	}
+	maximum := int(^uint(0) >> 1)
+	saturationBoundary := (maximum - 3) / 2
+	if got := saturatedTwicePlus(saturationBoundary-1, 3); got != maximum-2 {
+		t.Fatalf("saturatedTwicePlus(below boundary) = %d", got)
+	}
+	if got := saturatedTwicePlus(saturationBoundary, 3); got != 2*saturationBoundary+3 {
+		t.Fatalf("saturatedTwicePlus(exact boundary) = %d", got)
+	}
+	if got := saturatedTwicePlus(saturationBoundary+1, 3); got != maximum {
+		t.Fatalf("saturatedTwicePlus(over boundary) = %d", got)
+	}
 	value, err := New(1, 2)
 	if err != nil {
 		t.Fatal(err)

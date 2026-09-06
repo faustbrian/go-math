@@ -497,40 +497,19 @@ func TestAMutationPrimitiveBoundaryContracts(t *testing.T) {
 		}
 	}
 
-	options := ParseOptions{AllowExponent: true, Limits: gomath.DefaultLimits()}
-	for input, wantExponent := range map[string]int32{"1": 0, "1e0": 0, "1e1": 1, "1e-1": -1} {
-		mantissa, exponent, err := splitExponent(input, options)
-		if err != nil || mantissa != "1" || exponent != wantExponent {
-			t.Fatalf("splitExponent(%q) = %q, %d, %v", input, mantissa, exponent, err)
-		}
-	}
-	for _, input := range []string{"e1", "1e", "1e1e2"} {
-		if _, _, err := splitExponent(input, options); !errors.Is(err, ErrInvalid) {
-			t.Fatalf("splitExponent(%q) error = %v", input, err)
-		}
-	}
-	for input, want := range map[string]string{"0": "0", "123": "123", "1_2_3": "123"} {
-		digits, count, err := cleanDigits(input, true, len(want))
-		if err != nil || digits != want || count != len(want) {
-			t.Fatalf("cleanDigits(%q) = %q, %d, %v", input, digits, count, err)
-		}
-	}
-	for _, input := range []string{"", "_1", "1_", "1__2", "1a"} {
-		if _, _, err := cleanDigits(input, true, len(input)); err == nil {
-			t.Fatalf("cleanDigits(%q) succeeded", input)
-		}
-	}
-	if _, _, err := cleanDigits("1_2", false, 2); err == nil {
-		t.Fatal("cleanDigits accepted disabled underscores")
-	}
-	if _, _, err := cleanDigits("12", true, 1); !errors.Is(err, ErrLimit) {
-		t.Fatalf("cleanDigits over limit error = %v", err)
-	}
 }
 
 func TestAMutationPreflightAndExactBoundaryContracts(t *testing.T) {
 	ctx := context.Background()
 	limits := gomath.DefaultLimits()
+	maximum := int(^uint(0) >> 1)
+	saturationBoundary := (maximum - 64) / 2
+	if got := saturatedTwicePlus(saturationBoundary, 64); got != 2*saturationBoundary+64 {
+		t.Fatalf("saturatedTwicePlus(exact boundary) = %d", got)
+	}
+	if got := saturatedTwicePlus(saturationBoundary+1, 64); got != maximum {
+		t.Fatalf("saturatedTwicePlus(over boundary) = %d", got)
+	}
 
 	parseLimits := limits
 	parseLimits.MaxExponentMagnitude = 2

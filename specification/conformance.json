@@ -16,14 +16,14 @@
     {
       "id": "MATH-DEC-002",
       "authoritative_sources": ["gda-specification-source"],
-      "executable_evidence": ["TestDecimalConstructionAndParsingEdges", "TestDecimalParserCanExplicitlyEnableExponentNotation", "TestDecimalRepresentationAndBigOwnership"],
+      "executable_evidence": ["TestDecimalConstructionAndParsingEdges", "TestDecimalParserCanExplicitlyEnableExponentNotation", "TestDecimalRepresentationAndBigOwnership", "TestParseUsesFirstConclusiveRejection", "TestParseSharesDigitBudgetAcrossMantissa"],
       "fixtures": [],
       "fuzz": ["FuzzParseContextAndRoundTrip", "FuzzJSONDecoding"],
       "interoperability_evidence": [],
       "interoperability_classification": "not assessed",
       "differential_evidence": [],
       "differential_classification": "not assessed",
-      "public_behavior": ["Strict parsing, opt-in grammar features, numeric equality, and representation equality are distinct contracts."]
+      "public_behavior": ["Strict parsing, opt-in grammar features, bounded first-conclusive rejection, numeric equality, and representation equality are distinct contracts."]
     },
     {
       "id": "MATH-DEC-003",
@@ -100,26 +100,26 @@
     {
       "id": "MATH-DEC-009",
       "authoritative_sources": ["gda-specification-source"],
-      "executable_evidence": ["TestResourceCancellationAndArithmeticErrorsRemainDistinct", "TestDecimalResourceBoundaries", "TestDecimalOperationsRejectOversizedOperandsBeforeShortcuts"],
+      "executable_evidence": ["TestResourceCancellationAndArithmeticErrorsRemainDistinct", "TestDecimalResourceBoundaries", "TestDecimalOperationsRejectOversizedOperandsBeforeShortcuts", "TestParseStopsAtFirstConclusiveRejection", "TestParseDistinguishesSyntaxAndComponentLimits", "TestParseUsesFirstConclusiveRejection", "TestParseDistinguishesInputLimitFromSyntax", "TestBinaryDecodersClassifyShortEnvelopesAsSyntax", "TestBinaryDecodersApplyMaximumBeforeHeaderGrammar", "TestRandomSourceFailurePreservesSafeCauseTraversal", "TestContextPrecedesRandomArgumentsAndLimits", "TestParserRejectsHostileInputWithoutScalingAllocations"],
       "fixtures": [],
-      "fuzz": ["FuzzParseContextAndRoundTrip", "FuzzJSONDecoding", "FuzzBinaryDecoders"],
+      "fuzz": ["FuzzParseAndArithmetic", "FuzzParseRoundTrip", "FuzzParseContextAndRoundTrip", "FuzzJSONDecoding", "FuzzParse", "FuzzBinaryDecoders"],
       "interoperability_evidence": [],
       "interoperability_classification": "not assessed",
       "differential_evidence": [],
       "differential_classification": "not assessed",
-      "public_behavior": ["Potentially expensive numeric work is synchronously cancellable and bounded by explicit limits."]
+      "public_behavior": ["Potentially expensive numeric work is synchronously cancellable and bounded by explicit limits; syntax, configured-limit, and random-source failures retain distinct fixed categories and safe cause traversal."]
     },
     {
       "id": "MATH-DEC-010",
       "authoritative_sources": ["gda-specification-source"],
-      "executable_evidence": ["TestTextAndJSONNeverUseFloatingPoint", "TestBinaryCodecsRoundTripDeterministically", "TestBinaryCodecsRejectNonCanonicalAndOversizedValues"],
+      "executable_evidence": ["TestTextAndJSONNeverUseFloatingPoint", "TestBinaryCodecsRoundTripDeterministically", "TestBinaryCodecsRejectNonCanonicalAndOversizedValues", "TestBinaryDecodersClassifyShortEnvelopesAsSyntax", "TestBinaryDecodersHideNestedParserDiagnostics", "TestBinaryDecodersApplyMaximumBeforeHeaderGrammar"],
       "fixtures": [],
       "fuzz": ["FuzzJSONDecoding", "FuzzBinaryDecoders"],
       "interoperability_evidence": [],
       "interoperability_classification": "not assessed",
       "differential_evidence": [],
       "differential_classification": "not assessed",
-      "public_behavior": ["Canonical non-exponent text, JSON strings, and versioned deterministic binary frames never pass through float64."]
+      "public_behavior": ["Canonical non-exponent text, JSON strings, and versioned deterministic binary frames never pass through float64; short and malformed in-bound frames are syntax failures, while only oversized frames are limit failures."]
     },
     {
       "id": "MATH-DEC-011",

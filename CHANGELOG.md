@@ -2,7 +2,23 @@
 
 ## Unreleased
 
+### Added
+
+- Add `ErrRandomSource` so callers can classify injected-reader failures while
+  retaining safe `errors.Is` and `errors.As` cause traversal.
+
 ### Changed
+
+- Classify malformed parser and decoder input separately from crossed
+  configured limits, enforce bounded first-conclusive parsing, and use fixed
+  input-free diagnostics.
+- Bound previously unbounded Integer whitespace, Rational envelopes, and
+  Decimal exponent tokens under the documented parser limits.
+- Revise the governed parser, defensive-limit, and binary-codec decisions for
+  the bounded rejection contract:
+  - MATH-DEC-002 sha256:d5bb6be62247fff18b84617b0903bbc062de79f7d63d19838c1b3f944c370531
+  - MATH-DEC-009 sha256:d523d6fceb65cad46319f0e1529e03cab26d538baf1718dcba2c10cd825dbfac
+  - MATH-DEC-010 sha256:bbd33fb06b179bdcd267f3b8e39c25699419c7711ecd340cc45ac91e0531d5ee
 
 - Use the released `go-library-tools` v1.2.0 CLI and immutable merged
   workflow at `1f9629e5f27418600460b55a50a5b2fc81697fab` while preserving

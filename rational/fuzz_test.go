@@ -2,6 +2,8 @@ package rational_test
 
 import (
 	"encoding/json"
+	"errors"
+	"strings"
 	"testing"
 
 	gomath "github.com/faustbrian/go-math"
@@ -9,7 +11,10 @@ import (
 )
 
 func FuzzParseRoundTrip(f *testing.F) {
-	for _, seed := range []string{"0", "1/2", "-22/7", "100/25"} {
+	for _, seed := range []string{
+		"0", "1/2", "-22/7", "100/25", strings.Repeat("9", 256) + "/1",
+		strings.Repeat("9", 257) + "/1", "1/" + strings.Repeat("9", 257), "1/0",
+	} {
 		f.Add(seed)
 	}
 	f.Fuzz(func(t *testing.T, input string) {
@@ -17,6 +22,7 @@ func FuzzParseRoundTrip(f *testing.F) {
 		limits.MaxInputDigits = 256
 		value, err := rational.Parse(input, limits)
 		if err != nil {
+			assertFuzzRationalError(t, err)
 			return
 		}
 		roundTrip, err := rational.Parse(value.String(), limits)
@@ -28,4 +34,23 @@ func FuzzParseRoundTrip(f *testing.F) {
 			t.Fatalf("unsafe JSON encoding %q: %v", data, err)
 		}
 	})
+}
+
+func assertFuzzRationalError(t *testing.T, err error) {
+	t.Helper()
+	if len(err.Error()) > 128 {
+		t.Fatalf("unbounded parser diagnostic of %d bytes", len(err.Error()))
+	}
+	matches := 0
+	for _, category := range []error{
+		gomath.ErrInvalidArgument, gomath.ErrInvalidSyntax, gomath.ErrLimitExceeded,
+		gomath.ErrDivisionByZero,
+	} {
+		if errors.Is(err, category) {
+			matches++
+		}
+	}
+	if matches != 1 {
+		t.Fatalf("parser error matches %d terminal categories: %v", matches, err)
+	}
 }

@@ -15,7 +15,9 @@ type Limits struct {
 	MaxRandomAttempts    int
 	MaxIntermediateBits  int
 	MaxDecimalExpansion  int
-	MaxDiagnosticBytes   int
+	// MaxDiagnosticBytes is retained for v1 source compatibility.
+	// Deprecated: reserved no-op; stable category strings are fixed and bounded.
+	MaxDiagnosticBytes int
 }
 
 // DefaultLimits returns conservative general-purpose resource bounds.

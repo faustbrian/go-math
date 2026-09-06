@@ -35,15 +35,15 @@ and executable evidence before updating a pin.
 | Decision | Observable contract | Primary evidence | Independent status |
 | --- | --- | --- | --- |
 | MATH-DEC-001 | Finite decimal model with canonical numeric zero | value, parsing, text, JSON, and fuzz tests | no broad peer claim |
-| MATH-DEC-002 | Strict parsing and separate numeric and representation equality | parser, representation, and fuzz tests | not assessed |
+| MATH-DEC-002 | Strict bounded parsing with first-conclusive rejection and separate numeric and representation equality | parser, representation, and fuzz tests | not assessed |
 | MATH-DEC-003 | Separate exact and explicit context-rounded arithmetic | exact, context, division, and peer tests | maintained peer agreement on the recorded overlap |
 | MATH-DEC-004 | Significant precision, adjusted exponent, conditions, and traps | context condition and trap tests | maintained peer agreement on shared Rounded and Inexact conditions |
 | MATH-DEC-005 | Seven explicit rounding modes | tie tests and `rounding0.decTest` | official fixture agreement |
 | MATH-DEC-006 | Classified exceptional-operation errors with retained conditions | trap, division, resource, and cancellation tests | not assessed |
 | MATH-DEC-007 | Fractional scale maps to target exponent and quotient rounds once | quantize tests, `quantize0.decTest`, and peer tests | official fixture and maintained peer agreement |
 | MATH-DEC-008 | Two pinned archives, LF normalization, 3,547 executed vectors, and 1,542 classified skips | six executed operation files and exact harness accounting | official fixture agreement |
-| MATH-DEC-009 | Explicit resource limits and synchronous cancellation | resource, hostile operand, and fuzz tests | defensive package policy |
-| MATH-DEC-010 | Canonical text, JSON strings, and versioned deterministic binary frames | text, JSON, binary, and decoder fuzz tests | package wire policy; peer gap |
+| MATH-DEC-009 | Explicit resource limits, fixed safe diagnostics, random-source cause traversal, and synchronous cancellation | resource, hostile operand, allocation, cause, cancellation, and fuzz tests | defensive package policy |
+| MATH-DEC-010 | Canonical text, JSON strings, and versioned deterministic binary frames with distinct syntax and size rejection | text, JSON, binary, and decoder fuzz tests | package wire policy; peer gap |
 | MATH-DEC-011 | 488 maintained-peer comparisons with explicit gaps | `TestDecimalDifferentialAgainstAPDAndShopspring` and `maintained-peers.json` | maintained peer agreement on the recorded overlap |
 
 The GDA harness executes these exact records:

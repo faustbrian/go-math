@@ -15,6 +15,17 @@ provides distinct APIs for signed integers, exact rationals, finite base-10
 decimals, and explicitly inexact binary floats. Use ordinary Go numeric types
 when their fixed width and machine arithmetic are sufficient.
 
+The root module is stable at v1 and requires Go 1.26.6 or newer. Install the
+current minor release with:
+
+```sh
+go get github.com/faustbrian/go-math@v1.1.0
+```
+
+The root package identifier intentionally remains `gomath`, avoiding a
+collision with the standard-library `math` package. This is a compatibility
+exception, not an adapter naming pattern.
+
 ```go
 amount := decimal.MustParse("19.995")
 result, err := amount.Quantize(
@@ -28,10 +39,10 @@ bounded by `gomath.Limits`. Decimal contexts make precision, exponent range,
 rounding, conditions, and traps explicit. No conversion passes through
 `float64`.
 
-See the [documentation index](docs/README.md),
+See the [executable examples](example_test.go),
+[documentation index](docs/README.md),
 [specification decisions](docs/specification-decisions.md),
 [cookbook](docs/cookbook.md), and [verification guide](docs/verification.md).
-The minimum supported toolchain is Go 1.26.6.
 See the versioned [Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)
 and [package-family selection guidance](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/design-language.md#package-families-and-selection)
 for the shared design language this module follows.
@@ -52,7 +63,8 @@ for the shared design language this module follows.
 Run `make cohesion` for the repository-owned cohesion contract, `make check`
 for package gates, and `make ci` for the complete repository contract. See
 [CHANGELOG.md](CHANGELOG.md) for releases and [SECURITY.md](SECURITY.md) for
-vulnerability reporting.
+vulnerability reporting. Use [SUPPORT.md](SUPPORT.md) for support and
+[troubleshooting](docs/troubleshooting.md) for operational diagnosis.
 
 Licensed under MIT.
 

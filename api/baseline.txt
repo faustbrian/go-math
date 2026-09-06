@@ -1,5 +1,6 @@
 ## github.com/faustbrian/go-math
 var ErrInvalidArgument = errors.New("math: invalid argument") ...
+var ErrRandomSource = errors.New("math: random source failed")
 type Condition uint16
     const ConditionRounded Condition = 1 << iota ...
 type Limits struct{ ... }
