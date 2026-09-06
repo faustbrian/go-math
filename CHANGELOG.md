@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.1.0 - 2026-09-06
+
 ### Added
 
 - Add `ErrRandomSource` so callers can classify injected-reader failures while
