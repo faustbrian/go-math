@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"math/big"
-	"strconv"
 	"testing"
 
 	gomath "github.com/faustbrian/go-math"
@@ -355,17 +354,11 @@ func TestDecimalSerializationAndHelpersEdges(t *testing.T) {
 	if string(encoded) != `"12"` {
 		t.Fatal("JSON must use strings")
 	}
-	if !errorsIsRange(&strconv.NumError{Err: strconv.ErrRange}) || errorsIsRange(errors.New("x")) {
-		t.Fatal("range classification mismatch")
-	}
 	if compareInts(1, 0) != 1 || compareInts(0, 1) != -1 || compareInts(1, 1) != 0 {
 		t.Fatal("int comparison mismatch")
 	}
 	if compareInt64(1, 0) != 1 || compareInt64(0, 1) != -1 || compareInt64(1, 1) != 0 {
 		t.Fatal("int64 comparison mismatch")
-	}
-	if _, _, err := cleanDigits("_1", true, 2); err == nil {
-		t.Fatal("leading underscore accepted")
 	}
 }
 

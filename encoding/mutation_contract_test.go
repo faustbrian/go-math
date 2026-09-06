@@ -28,10 +28,11 @@ func TestMutationReaderHeaderAndSizeBoundaries(t *testing.T) {
 	if _, err := newReader(exactMaximum, kindInteger, limits); err != nil {
 		t.Fatalf("newReader(exact maximum) error = %v", err)
 	}
-	for _, size := range []int{3, maximumBytes + 1} {
-		if _, err := newReader(make([]byte, size), kindInteger, limits); !errors.Is(err, gomath.ErrLimitExceeded) {
-			t.Fatalf("newReader(size %d) error = %v", size, err)
-		}
+	if _, err := newReader(make([]byte, 3), kindInteger, limits); !errors.Is(err, gomath.ErrInvalidSyntax) {
+		t.Fatalf("newReader(short) error = %v", err)
+	}
+	if _, err := newReader(make([]byte, maximumBytes+1), kindInteger, limits); !errors.Is(err, gomath.ErrLimitExceeded) {
+		t.Fatalf("newReader(oversized) error = %v", err)
 	}
 
 	for index := range minimum {

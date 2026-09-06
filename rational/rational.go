@@ -57,24 +57,30 @@ func Parse(text string, limits gomath.Limits) (Rational, error) {
 	if err := limits.Validate(); err != nil {
 		return Rational{}, err
 	}
-	if text == "" {
-		return Rational{}, gomath.ErrInvalidSyntax
+	if len(text) > saturatedTwicePlus(limits.MaxInputDigits, 3) {
+		return Rational{}, fmt.Errorf("%w: rational input bytes", gomath.ErrLimitExceeded)
 	}
-	if strings.TrimSpace(text) != text {
-		return Rational{}, gomath.ErrInvalidSyntax
+	numeratorEnd, err := scanIntegerComponent(
+		text, 0, limits.MaxInputDigits, "rational numerator digits", true,
+	)
+	if err != nil {
+		return Rational{}, err
 	}
-	if strings.Count(text, "/") > 1 {
-		return Rational{}, gomath.ErrInvalidSyntax
+	numeratorText := text[:numeratorEnd]
+	denominatorText := "1"
+	if numeratorEnd < len(text) {
+		denominatorStart := numeratorEnd + 1
+		denominatorEnd, scanErr := scanIntegerComponent(
+			text, denominatorStart, limits.MaxInputDigits,
+			"rational denominator digits", false,
+		)
+		if scanErr != nil {
+			return Rational{}, scanErr
+		}
+		denominatorText = text[denominatorStart:denominatorEnd]
 	}
-	parts := strings.Split(text, "/")
-	if len(parts) == 1 {
-		parts = append(parts, "1")
-	}
-	if !validInteger(parts[0], limits.MaxInputDigits) || !validInteger(parts[1], limits.MaxInputDigits) {
-		return Rational{}, gomath.ErrInvalidSyntax
-	}
-	numerator, _ := new(big.Int).SetString(parts[0], 10)
-	denominator, _ := new(big.Int).SetString(parts[1], 10)
+	numerator, _ := new(big.Int).SetString(numeratorText, 10)
+	denominator, _ := new(big.Int).SetString(denominatorText, 10)
 
 	return NewChecked(numerator, denominator, limits)
 }
@@ -317,32 +323,56 @@ func validateContext(ctx context.Context, limits gomath.Limits) error {
 	return limits.Validate()
 }
 
-func validInteger(text string, maximumDigits int) bool {
-	if text == "" {
-		return false
+func scanIntegerComponent(text string, start, maximumDigits int, limitName string, allowSlash bool) (int, error) {
+	if start >= len(text) {
+		return 0, gomath.ErrInvalidSyntax
 	}
-	if text[0] == '-' {
-		text = text[1:]
+	index := start
+	if text[index] == '-' {
+		index++
 	}
-	if text == "" {
-		return false
+	if index >= len(text) || text[index] == '/' {
+		return 0, gomath.ErrInvalidSyntax
 	}
-	if len(text) > maximumDigits {
-		return false
-	}
-	if len(text) > 1 && text[0] == '0' {
-		return false
-	}
-	for _, character := range text {
-		if character < '0' {
-			return false
+	digits := 0
+	leadingZero := false
+	for index < len(text) {
+		character := text[index]
+		if character == '/' && allowSlash {
+			return index, nil
 		}
-		if character > '9' {
-			return false
+		if character < '0' || character > '9' {
+			return 0, gomath.ErrInvalidSyntax
 		}
+		if leadingZero {
+			return 0, gomath.ErrInvalidSyntax
+		}
+		if digits >= maximumDigits {
+			return 0, fmt.Errorf("%w: %s", gomath.ErrLimitExceeded, limitName)
+		}
+		if digits == 0 {
+			leadingZero = character == '0'
+		}
+		digits++
+		index++
 	}
 
-	return true
+	return index, nil
+}
+
+func validInteger(text string, maximumDigits int) bool {
+	end, err := scanIntegerComponent(text, 0, maximumDigits, "rational digits", false)
+
+	return err == nil && end == len(text)
+}
+
+func saturatedTwicePlus(value, overhead int) int {
+	maximum := int(^uint(0) >> 1)
+	if value >= (maximum-overhead)/2+1 {
+		return maximum
+	}
+
+	return 2*value + overhead
 }
 
 func exponentMagnitude(exponent int64) uint64 {

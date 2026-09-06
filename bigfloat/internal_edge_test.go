@@ -76,13 +76,16 @@ func TestParseInputBoundariesAreIndependent(t *testing.T) {
 		Limits:    limits,
 	}
 
-	for _, text := range []string{"", " 1", "1 ", "1.250"} {
+	for _, text := range []string{"", " 1", "1 "} {
 		if _, err := Parse(text, 10, operation); !errors.Is(err, gomath.ErrInvalidSyntax) {
 			t.Fatalf("Parse(%q) error = %v, want ErrInvalidSyntax", text, err)
 		}
 	}
-	if _, err := Parse("", 8, operation); !errors.Is(err, gomath.ErrInvalidSyntax) {
-		t.Fatalf("Parse(empty, invalid base) error = %v, want ErrInvalidSyntax", err)
+	if _, err := Parse("1.250", 10, operation); !errors.Is(err, gomath.ErrLimitExceeded) {
+		t.Fatalf("Parse(over limit) error = %v, want ErrLimitExceeded", err)
+	}
+	if _, err := Parse("", 8, operation); !errors.Is(err, gomath.ErrInvalidArgument) {
+		t.Fatalf("Parse(empty, invalid base) error = %v, want ErrInvalidArgument", err)
 	}
 	if result, err := Parse("1.25", 10, operation); err != nil || result.Value.String() != "1.25" {
 		t.Fatalf("Parse at input limit = %s, %v", result.Value, err)

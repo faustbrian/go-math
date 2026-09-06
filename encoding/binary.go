@@ -172,6 +172,10 @@ func UnmarshalFloat(data []byte, limits gomath.Limits) (bigfloat.Float, error) {
 	if err != nil {
 		return bigfloat.Float{}, invalidEncoding(err)
 	}
+	roundingMode := gomath.RoundingMode(rounding)
+	if !validFloatRounding(roundingMode) {
+		return bigfloat.Float{}, gomath.ErrInvalidSyntax
+	}
 	payload, err := reader.bytes()
 	if err != nil {
 		return bigfloat.Float{}, invalidEncoding(err)
@@ -185,7 +189,7 @@ func UnmarshalFloat(data []byte, limits gomath.Limits) (bigfloat.Float, error) {
 	}
 	result, err := bigfloat.FromBig(&decoded, bigfloat.Context{
 		Precision: decoded.Prec(),
-		Rounding:  gomath.RoundingMode(rounding),
+		Rounding:  roundingMode,
 		Limits:    limits,
 	})
 	if err != nil {
@@ -199,6 +203,16 @@ func UnmarshalFloat(data []byte, limits gomath.Limits) (bigfloat.Float, error) {
 	return result.Value, nil
 }
 
+func validFloatRounding(mode gomath.RoundingMode) bool {
+	switch mode {
+	case gomath.RoundHalfEven, gomath.RoundHalfUp, gomath.RoundDown,
+		gomath.RoundUp, gomath.RoundCeiling, gomath.RoundFloor:
+		return true
+	default:
+		return false
+	}
+}
+
 type reader struct {
 	data   []byte
 	offset int
@@ -209,11 +223,11 @@ func newReader(data []byte, kind byte, limits gomath.Limits) (*reader, error) {
 		return nil, err
 	}
 	maximumBytes := limits.MaxIntermediateBits/8 + 64
-	if len(data) < 4 {
-		return nil, fmt.Errorf("%w: binary payload size", gomath.ErrLimitExceeded)
-	}
 	if len(data) > maximumBytes {
 		return nil, fmt.Errorf("%w: binary payload size", gomath.ErrLimitExceeded)
+	}
+	if len(data) < 4 {
+		return nil, gomath.ErrInvalidSyntax
 	}
 	if data[0] != magic[0] {
 		return nil, gomath.ErrInvalidSyntax
@@ -337,10 +351,4 @@ func appendLength(destination []byte, length int) []byte {
 	return append(destination, buffer[:count]...)
 }
 
-func invalidEncoding(err error) error {
-	if err == nil {
-		return gomath.ErrInvalidSyntax
-	}
-
-	return fmt.Errorf("%w: %v", gomath.ErrInvalidSyntax, err)
-}
+func invalidEncoding(error) error { return gomath.ErrInvalidSyntax }

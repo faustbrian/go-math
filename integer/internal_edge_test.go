@@ -38,6 +38,14 @@ func TestInternalBoundaryBranches(t *testing.T) {
 	if digitValue('!') != -1 {
 		t.Fatal("invalid digit accepted")
 	}
+	maximum := int(^uint(0) >> 1)
+	saturationBoundary := (maximum - 64) / 2
+	if got := saturatedTwicePlus(saturationBoundary, 64); got != 2*saturationBoundary+64 {
+		t.Fatalf("saturatedTwicePlus(exact boundary) = %d", got)
+	}
+	if got := saturatedTwicePlus(saturationBoundary+1, 64); got != maximum {
+		t.Fatalf("saturatedTwicePlus(over boundary) = %d", got)
+	}
 	if Max(New(2), New(1)).String() != "2" {
 		t.Fatal("max left branch")
 	}
@@ -81,8 +89,8 @@ func TestInternalBoundaryBranches(t *testing.T) {
 	if _, err := nthRoot(cancelled, big.NewInt(1000), 3, limits); err == nil {
 		t.Fatal("expected root cancellation")
 	}
-	if _, err := New(1000).Root(&cancelAfterValidation{}, 3, limits); err == nil {
-		t.Fatal("expected root loop cancellation")
+	if _, err := New(1000).Root(&cancelAfterValidation{}, 3, limits); err != context.Canceled {
+		t.Fatalf("root loop error = %v, want context.Canceled", err)
 	}
 	if root, err := nthRoot(context.Background(), big.NewInt(1<<20), 3, tiny); err != nil || root.Sign() < 0 {
 		t.Fatal("bounded root failed")
@@ -90,8 +98,8 @@ func TestInternalBoundaryBranches(t *testing.T) {
 	if _, err := Random(context.Background(), bytes.NewReader([]byte{255, 1}), New(0), New(3), limits); err != nil {
 		t.Fatalf("rejection sampling: %v", err)
 	}
-	if _, err := Random(&cancelAfterValidation{}, bytes.NewReader([]byte{1}), New(0), New(3), limits); err == nil {
-		t.Fatal("expected random loop cancellation")
+	if _, err := Random(&cancelAfterValidation{}, bytes.NewReader([]byte{1}), New(0), New(3), limits); err != context.Canceled {
+		t.Fatalf("random loop error = %v, want context.Canceled", err)
 	}
 }
 

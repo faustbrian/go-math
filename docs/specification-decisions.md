@@ -105,16 +105,18 @@ Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
     "Use a strict default grammar, explicit opt-in parser options, numeric equality, and separate representation equality"
   ],
   "peer_behavior": "APD and shopspring/decimal accept different input grammars and expose different scale or exponent identity semantics.",
-  "selected_behavior": "Parse uses the strict package grammar; ParseWithOptions separately enables exponent notation, a leading plus, leading zeros, surrounding whitespace, and underscores; Equal compares numeric value while SameRepresentation compares coefficient and exponent.",
+  "selected_behavior": "Parse uses the strict package grammar; ParseWithOptions separately enables exponent notation, a leading plus, leading zeros, surrounding whitespace, and underscores; bounded parsing uses the first conclusive syntax or configured-limit rejection; Equal compares numeric value while SameRepresentation compares coefficient and exponent.",
   "rationale": "Explicit grammar switches and two named equality contracts prevent permissive input or scale identity from being inferred accidentally.",
-  "security_consequences": "Unexpected separators, whitespace, signs, exponent notation, and hostile digit counts fail closed unless a caller explicitly enables them within limits.",
-  "resource_consequences": "Parsing is bounded before attacker-sized coefficient or exponent work and representation comparison performs no normalization allocation.",
-  "compatibility_consequences": "Default grammar, option meaning, numeric equality, and representation equality are stable public behavior.",
+  "security_consequences": "Unexpected separators, whitespace, signs, exponent notation, hostile digit counts, and over-bound raw input fail closed without entering diagnostic text.",
+  "resource_consequences": "Parsing stops at the first conclusive grammar or configured-limit rejection before attacker-sized coefficient or exponent work and representation comparison performs no normalization allocation.",
+  "compatibility_consequences": "Default grammar, option meaning, first-conclusive rejection, numeric equality, and representation equality are stable public behavior; only documented hostile raw forms beyond the configured bounds are narrowed.",
   "wire_consequences": "Equivalent representations may compare numerically equal while preserving distinct coefficients and exponents until canonical serialization.",
   "executable_evidence": [
     "TestDecimalConstructionAndParsingEdges",
     "TestDecimalParserCanExplicitlyEnableExponentNotation",
-    "TestDecimalRepresentationAndBigOwnership"
+    "TestDecimalRepresentationAndBigOwnership",
+    "TestParseUsesFirstConclusiveRejection",
+    "TestParseSharesDigitBudgetAcrossMantissa"
   ],
   "fixture_evidence": [],
   "fuzz_evidence": [
@@ -135,7 +137,7 @@ Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
     "docs/numeric-model.md"
   ],
   "upstream_status": "The source defines the abstract decimal model; accepted Go input grammar remains package policy.",
-  "reconsider_when": "The default parser grammar, parse options, or equality surface changes."
+  "reconsider_when": "The default parser grammar, parse options, first-conclusive rejection order, raw input bounds, or equality surface changes."
 }
 ```
 
@@ -559,21 +561,33 @@ Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
     "Require explicit gomath.Limits and synchronous context.Context checks at potentially expensive boundaries"
   ],
   "peer_behavior": "APD exposes context arithmetic limits but peer libraries use different cancellation and allocation policies; no peer contract substitutes for package defenses.",
-  "selected_behavior": "Potentially expensive parsing and arithmetic accept explicit gomath.Limits, synchronous operations observe context.Context cancellation, and cancellation, arithmetic errors, and resource-limit errors remain distinct.",
+  "selected_behavior": "Potentially expensive parsing and arithmetic accept explicit gomath.Limits; parsing distinguishes syntax from configured-limit rejection at bounded first-conclusive boundaries; synchronous operations preserve nil, cancellation, and deadline precedence; random-source failure has a fixed safe category with traversable caller cause; and cancellation, source, arithmetic, and resource-limit errors remain distinct.",
   "rationale": "Caller-visible deterministic bounds prevent attacker-controlled numeric size from becoming ambient memory or CPU policy.",
-  "security_consequences": "Digit, bit, exponent, and intermediate limits fail closed before runaway work.",
-  "resource_consequences": "All guarded operations remain synchronous and bounded by caller-selected or documented default limits.",
-  "compatibility_consequences": "Limit enforcement and error classification are public behavior; tightening defaults requires compatibility review.",
-  "wire_consequences": "Oversized wire input is rejected rather than truncated or partially decoded.",
+  "security_consequences": "Digit, raw-byte, exponent, bit, and intermediate limits fail closed before runaway work; fixed diagnostics do not expose rejected input or reader-cause text.",
+  "resource_consequences": "All guarded operations remain synchronous and bounded by caller-selected or documented default limits; Integer and Decimal raw text use overflow-safe 2*MaxInputDigits+64 bounds, Rational uses 2*MaxInputDigits+3, Decimal exponent tokens use an eleven-byte bound, and binary payloads use MaxIntermediateBits/8+64.",
+  "compatibility_consequences": "Limit enforcement, first-conclusive error classification, context identity, and ErrRandomSource cause traversal are public behavior; MaxDiagnosticBytes remains a deprecated reserved no-op; tightening other defaults requires compatibility review.",
+  "wire_consequences": "Oversized wire input is rejected rather than truncated or partially decoded, while short or malformed in-bound envelopes remain syntax failures.",
   "executable_evidence": [
     "TestResourceCancellationAndArithmeticErrorsRemainDistinct",
     "TestDecimalResourceBoundaries",
-    "TestDecimalOperationsRejectOversizedOperandsBeforeShortcuts"
+    "TestDecimalOperationsRejectOversizedOperandsBeforeShortcuts",
+    "TestParseStopsAtFirstConclusiveRejection",
+    "TestParseDistinguishesSyntaxAndComponentLimits",
+    "TestParseUsesFirstConclusiveRejection",
+    "TestParseDistinguishesInputLimitFromSyntax",
+    "TestBinaryDecodersClassifyShortEnvelopesAsSyntax",
+    "TestBinaryDecodersApplyMaximumBeforeHeaderGrammar",
+    "TestRandomSourceFailurePreservesSafeCauseTraversal",
+    "TestContextPrecedesRandomArgumentsAndLimits",
+    "TestParserRejectsHostileInputWithoutScalingAllocations"
   ],
   "fixture_evidence": [],
   "fuzz_evidence": [
+    "FuzzParseAndArithmetic",
+    "FuzzParseRoundTrip",
     "FuzzParseContextAndRoundTrip",
     "FuzzJSONDecoding",
+    "FuzzParse",
     "FuzzBinaryDecoders"
   ],
   "interoperability_evidence": [],
@@ -581,6 +595,16 @@ Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
   "public_apis": [
     "Limits",
     "DefaultLimits",
+    "ErrRandomSource",
+    "integer.Parse",
+    "integer.Random",
+    "rational.Parse",
+    "decimal.ParseWithOptions",
+    "bigfloat.Parse",
+    "encoding.UnmarshalInteger",
+    "encoding.UnmarshalRational",
+    "encoding.UnmarshalDecimal",
+    "encoding.UnmarshalFloat",
     "ParseOptions.Limits",
     "Context.Limits"
   ],
@@ -590,7 +614,7 @@ Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
     "docs/troubleshooting.md"
   ],
   "upstream_status": "No General Decimal Arithmetic requirement defines this defensive Go execution policy.",
-  "reconsider_when": "A limit, default budget, cancellation point, or resource error category changes."
+  "reconsider_when": "A limit, raw-bound formula, default budget, rejection precedence, cancellation point, source-cause rule, or resource error category changes."
 }
 ```
 
@@ -620,16 +644,19 @@ Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
     "Use canonical non-exponent text, JSON strings, and a versioned deterministic binary representation"
   ],
   "peer_behavior": "Decimal peers differ on exponent formatting, trailing zeros, JSON numbers versus strings, and binary encodings.",
-  "selected_behavior": "Text uses canonical non-exponent decimal notation without float64 conversion, JSON encodes decimal values as strings, and encoding codecs use a versioned deterministic binary representation that rejects non-canonical, oversized, wrong-kind, wrong-version, and trailing input.",
+  "selected_behavior": "Text uses canonical non-exponent decimal notation without float64 conversion, JSON encodes decimal values as strings, and encoding codecs use a versioned deterministic binary representation that classifies short, malformed, non-canonical, wrong-kind, wrong-version, and trailing input as syntax while classifying only payloads above the configured maximum as limits.",
   "rationale": "String JSON preserves arbitrary precision and a versioned canonical binary frame makes equality, hashing, and upgrades deterministic.",
-  "security_consequences": "Decoders reject ambiguous, oversized, and trailing data before constructing values.",
-  "resource_consequences": "Text and binary rendering and decoding use explicit output and input limits.",
-  "compatibility_consequences": "Canonical text, JSON string shape, binary version, kind tags, and rejection rules are stable wire contracts.",
+  "security_consequences": "Decoders reject ambiguous, oversized, short, malformed, and trailing data before constructing values and expose no nested parser diagnostic.",
+  "resource_consequences": "Text and binary rendering and decoding use explicit output and input limits; binary payload length is checked before the fixed header and parser work.",
+  "compatibility_consequences": "Canonical text, JSON string shape, binary version, kind tags, syntax-versus-limit classification, and rejection rules are stable wire contracts.",
   "wire_consequences": "Decimal JSON tokens are strings and deterministic binary frames are versioned; neither format carries rounding context.",
   "executable_evidence": [
     "TestTextAndJSONNeverUseFloatingPoint",
     "TestBinaryCodecsRoundTripDeterministically",
-    "TestBinaryCodecsRejectNonCanonicalAndOversizedValues"
+    "TestBinaryCodecsRejectNonCanonicalAndOversizedValues",
+    "TestBinaryDecodersClassifyShortEnvelopesAsSyntax",
+    "TestBinaryDecodersHideNestedParserDiagnostics",
+    "TestBinaryDecodersApplyMaximumBeforeHeaderGrammar"
   ],
   "fixture_evidence": [],
   "fuzz_evidence": [
@@ -650,7 +677,7 @@ Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
     "docs/serialization.md"
   ],
   "upstream_status": "General Decimal Arithmetic does not define the package JSON or binary formats; those are explicitly package-owned.",
-  "reconsider_when": "Canonical text, JSON token type, binary version, or decoder acceptance changes."
+  "reconsider_when": "Canonical text, JSON token type, binary version, decoder acceptance, or syntax-versus-limit classification changes."
 }
 ```
 

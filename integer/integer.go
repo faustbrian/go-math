@@ -68,6 +68,9 @@ func Parse(text string, options ParseOptions) (Integer, error) {
 	if options.Base < 2 || options.Base > 36 {
 		return Integer{}, fmt.Errorf("%w: base must be between 2 and 36", gomath.ErrInvalidArgument)
 	}
+	if len(text) > saturatedTwicePlus(options.Limits.MaxInputDigits, 64) {
+		return Integer{}, fmt.Errorf("%w: integer input bytes", gomath.ErrLimitExceeded)
+	}
 	if text == "" {
 		return Integer{}, gomath.ErrInvalidSyntax
 	}
@@ -87,15 +90,12 @@ func Parse(text string, options ParseOptions) (Integer, error) {
 		}
 		digits = digits[1:]
 	}
-	clean, count, ok := validateDigits(digits, options.Base, options.AllowUnderscores)
-	if !ok {
-		return Integer{}, gomath.ErrInvalidSyntax
-	}
-	if count > options.Limits.MaxInputDigits {
-		return Integer{}, fmt.Errorf("%w: input digits", gomath.ErrLimitExceeded)
-	}
-	if !options.AllowLeadingZeros && count > 1 && clean[0] == '0' {
-		return Integer{}, gomath.ErrInvalidSyntax
+	clean, _, err := validateDigitsLimited(
+		digits, options.Base, options.AllowUnderscores, options.AllowLeadingZeros,
+		options.Limits.MaxInputDigits,
+	)
+	if err != nil {
+		return Integer{}, err
 	}
 	if text[0] == '-' {
 		clean = "-" + clean
@@ -354,7 +354,7 @@ func Random(ctx context.Context, source io.Reader, minimum, maximum Integer, lim
 			return Integer{}, err
 		}
 		if _, err := io.ReadFull(source, buffer); err != nil {
-			return Integer{}, fmt.Errorf("random source: %w", err)
+			return Integer{}, &randomSourceError{cause: err}
 		}
 		candidate := new(big.Int).SetBytes(buffer)
 		if candidate.Cmp(cutoff) < 0 {
@@ -365,6 +365,14 @@ func Random(ctx context.Context, source io.Reader, minimum, maximum Integer, lim
 	}
 
 	return Integer{}, fmt.Errorf("%w: random rejection attempts", gomath.ErrLimitExceeded)
+}
+
+type randomSourceError struct{ cause error }
+
+func (*randomSourceError) Error() string { return gomath.ErrRandomSource.Error() }
+
+func (e *randomSourceError) Unwrap() []error {
+	return []error{gomath.ErrRandomSource, e.cause}
 }
 
 // Int64 returns an exact signed machine integer or ErrConversion.
@@ -443,38 +451,78 @@ func validateContext(ctx context.Context, limits gomath.Limits) error {
 }
 
 func validateDigits(text string, base int, allowUnderscores bool) (string, int, bool) {
-	var builder strings.Builder
-	builder.Grow(len(text))
+	clean, count, err := validateDigitsLimited(
+		text, base, allowUnderscores, true, int(^uint(0)>>1),
+	)
+
+	return clean, count, err == nil
+}
+
+func validateDigitsLimited(
+	text string,
+	base int,
+	allowUnderscores bool,
+	allowLeadingZeros bool,
+	maximum int,
+) (string, int, error) {
 	count := 0
+	hasUnderscore := false
 	previousUnderscore := false
+	leadingZero := false
 	for index := 0; index < len(text); index++ {
 		character := text[index]
 		if character == '_' {
 			if !allowUnderscores {
-				return "", 0, false
+				return "", 0, gomath.ErrInvalidSyntax
 			}
 			if count == 0 {
-				return "", 0, false
+				return "", 0, gomath.ErrInvalidSyntax
 			}
 			if previousUnderscore {
-				return "", 0, false
+				return "", 0, gomath.ErrInvalidSyntax
 			}
 			if index == len(text)-1 {
-				return "", 0, false
+				return "", 0, gomath.ErrInvalidSyntax
 			}
+			hasUnderscore = true
 			previousUnderscore = true
 			continue
 		}
 		value := digitValue(character)
 		if value < 0 || value >= base {
-			return "", 0, false
+			return "", 0, gomath.ErrInvalidSyntax
 		}
-		builder.WriteByte(character)
+		if leadingZero && !allowLeadingZeros {
+			return "", 0, gomath.ErrInvalidSyntax
+		}
+		if count >= maximum {
+			return "", 0, fmt.Errorf("%w: input digits", gomath.ErrLimitExceeded)
+		}
+		if count == 0 {
+			leadingZero = character == '0'
+		}
 		count++
 		previousUnderscore = false
 	}
 
-	return builder.String(), count, count > 0
+	if count == 0 {
+		return "", 0, gomath.ErrInvalidSyntax
+	}
+
+	if !hasUnderscore {
+		return text, count, nil
+	}
+
+	return strings.ReplaceAll(text, "_", ""), count, nil
+}
+
+func saturatedTwicePlus(value, overhead int) int {
+	maximum := int(^uint(0) >> 1)
+	if value > (maximum-overhead)/2 {
+		return maximum
+	}
+
+	return 2*value + overhead
 }
 
 func digitValue(character byte) int {

@@ -16,22 +16,6 @@ import (
 func TestParserRejectsHostileInputWithoutScalingAllocations(t *testing.T) {
 	limits := gomath.DefaultLimits()
 	limits.MaxInputDigits = 8
-	measureObjects := func(input string, want error) float64 {
-		return testing.AllocsPerRun(10, func() {
-			if _, err := decimal.ParseWithOptions(input, decimal.ParseOptions{Limits: limits}); !errors.Is(err, want) {
-				panic("hostile decimal did not retain its error identity")
-			}
-		})
-	}
-	boundaryDigits := measureObjects(strings.Repeat("9", limits.MaxInputDigits+1), gomath.ErrLimitExceeded)
-	hostileDigits := measureObjects(strings.Repeat("9", 1<<20), gomath.ErrLimitExceeded)
-	if hostileDigits > boundaryDigits+1 {
-		t.Fatalf(
-			"attacker-sized input allocated %.0f objects; near-boundary rejection allocated %.0f",
-			hostileDigits, boundaryDigits,
-		)
-	}
-
 	measureBytes := func(input string, want error) int64 {
 		result := testing.Benchmark(func(benchmark *testing.B) {
 			for benchmark.Loop() {
@@ -43,8 +27,16 @@ func TestParserRejectsHostileInputWithoutScalingAllocations(t *testing.T) {
 
 		return result.AllocedBytesPerOp()
 	}
+	boundaryDigits := measureBytes(strings.Repeat("9", limits.MaxInputDigits+1), gomath.ErrLimitExceeded)
+	hostileDigits := measureBytes(strings.Repeat("9", 1<<20), gomath.ErrLimitExceeded)
+	if hostileDigits > boundaryDigits+1024 {
+		t.Fatalf(
+			"attacker-sized input allocated %d bytes; near-boundary rejection allocated %d",
+			hostileDigits, boundaryDigits,
+		)
+	}
 	boundarySeparators := measureBytes("1..", decimal.ErrInvalid)
-	hostileSeparators := measureBytes(strings.Repeat(".", 1<<20), decimal.ErrInvalid)
+	hostileSeparators := measureBytes(strings.Repeat(".", 1<<20), gomath.ErrLimitExceeded)
 	if hostileSeparators > boundarySeparators+1024 {
 		t.Fatalf(
 			"attacker-sized separators allocated %d bytes; near-boundary rejection allocated %d",
