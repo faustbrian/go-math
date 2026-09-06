@@ -52,32 +52,32 @@ operations:
   - type: go-test
     packages: ["./integer"]
     fuzz: '^FuzzParseAndArithmetic$'
-    budget: 2s
+    budget: 10000x
     timeout: 2m
   - type: go-test
     packages: ["./rational"]
     fuzz: '^FuzzParseRoundTrip$'
-    budget: 2s
+    budget: 10000x
     timeout: 2m
   - type: go-test
     packages: ["./decimal"]
     fuzz: '^FuzzParseContextAndRoundTrip$'
-    budget: 2s
+    budget: 10000x
     timeout: 2m
   - type: go-test
     packages: ["./decimal"]
     fuzz: '^FuzzJSONDecoding$'
-    budget: 2s
+    budget: 10000x
     timeout: 2m
   - type: go-test
     packages: ["./bigfloat"]
     fuzz: '^FuzzParse$'
-    budget: 2s
+    budget: 10000x
     timeout: 2m
   - type: go-test
     packages: ["./encoding"]
     fuzz: '^FuzzBinaryDecoders$'
-    budget: 2s
+    budget: 10000x
     timeout: 2m
 - module: "."
   gate: benchmark
