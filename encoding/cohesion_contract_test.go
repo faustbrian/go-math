@@ -142,6 +142,30 @@ func TestFloatRoundTripPreservesEverySupportedRoundingMode(t *testing.T) {
 	}
 }
 
+func TestUnmarshalFloatPreservesDecodedValueLimit(t *testing.T) {
+	t.Parallel()
+
+	limits := gomath.DefaultLimits()
+	result, err := bigfloat.NewInt64(1, bigfloat.Context{
+		Precision: 8,
+		Rounding:  gomath.RoundHalfEven,
+		Limits:    limits,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := mathencoding.MarshalFloat(result.Value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	limits.MaxIntermediateBits = 1
+	_, err = mathencoding.UnmarshalFloat(data, limits)
+	assertBinaryInputError(
+		t, err, gomath.ErrLimitExceeded,
+		"math: resource limit exceeded: binary precision",
+	)
+}
+
 func binaryDecoders() []decodeCase {
 	return []decodeCase{
 		{name: "integer", kind: 1, run: func(data []byte, limits gomath.Limits) error {

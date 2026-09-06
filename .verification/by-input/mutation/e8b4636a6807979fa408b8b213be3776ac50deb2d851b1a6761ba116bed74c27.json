@@ -4,7 +4,7 @@
   "module": ".",
   "package": "encoding",
   "gate": "mutation",
-  "input_digest": "sha256:fcee65b870778474fcfea4fec8e16186f0481d2fca5e169a69b7aa7e3501a9b3",
+  "input_digest": "sha256:e8b4636a6807979fa408b8b213be3776ac50deb2d851b1a6761ba116bed74c27",
   "verifier_digest": "sha256:9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
   "result": "passed",
   "report_digest": "sha256:557da3642850776c1613fbe4cc02db2ba11e2bdc77df121e4270325568e8f650",
@@ -15,5 +15,5 @@
     "GOVERSION": "go1.27.0",
     "gremlins_binary_sha256": "sha256:6a2beddc477eb410f8a670b6c9049558563d3c4327498fe31604d31c773a959e"
   },
-  "completed_at": "2026-09-06T02:04:00.521387Z"
+  "completed_at": "2026-09-06T02:15:04.931299Z"
 }
