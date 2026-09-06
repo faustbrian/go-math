@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Run fuzz verification with deterministic execution-count budgets so CI does
+  not depend on timer shutdown behavior.
+
 ## 1.1.0 - 2026-09-06
 
 ### Added
