@@ -7,6 +7,7 @@
 - Clarify root-module version tags and support and vulnerability-reporting
   routes, and strengthen documentation checks for required files, local links,
   public package docs, and executable examples.
+- Exclude JavaScript dependency sources from Go API compatibility discovery.
 
 ### Changed
 

@@ -3,7 +3,7 @@ set -eu
 
 temporary=$(mktemp)
 trap 'rm -f "$temporary"' EXIT
-for package in $(go list ./...); do
+for package in $(go list ./... | awk '$0 !~ /\/node_modules\//'); do
 	printf '## %s\n' "$package" >>"$temporary"
 	go doc -short "$package" >>"$temporary"
 done
@@ -12,4 +12,3 @@ if [ "${1:-}" = "--update" ]; then
 	exit 0
 fi
 diff -u api/baseline.txt "$temporary"
-
