@@ -23,6 +23,10 @@ for path in "${required[@]}"; do
 	fi
 done
 
+if ! node --input-type=module -e 'import("marked"); import("github-slugger")' >/dev/null 2>&1; then
+	npm ci --ignore-scripts --no-audit --no-fund
+fi
+
 python3 - "${required[@]}" <<'PY'
 from pathlib import Path
 from urllib.parse import unquote, urlsplit

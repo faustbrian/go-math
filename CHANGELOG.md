@@ -8,6 +8,8 @@
   routes, and strengthen documentation checks for required files, local links,
   public package docs, and executable examples.
 - Exclude JavaScript dependency sources from Go API compatibility discovery.
+- Bootstrap the pinned Markdown parser dependencies when documentation checks
+  run in a clean consumer checkout.
 
 ### Changed
 
