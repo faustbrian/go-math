@@ -5,10 +5,16 @@ division, powers, and roots can allocate substantially, so limits are part of
 the API rather than an operational afterthought. Reuse immutable values and
 contexts freely, but do not raise limits for untrusted input.
 
-Run `make benchmark` for allocation and scaling comparisons with direct
-`math/big`, `apd`, and `shopspring/decimal`. Benchmark semantics are aligned
-where possible; different rounding or representation contracts are identified
-in benchmark names.
+Run the bounded benchmark suite:
+
+```sh
+go test -run '^$' -bench '^Benchmark' -benchtime=100ms -benchmem \
+  . ./bigfloat ./decimal ./encoding ./integer ./mathtest ./rational
+```
+
+The comparisons use direct `math/big`, `apd`, and `shopspring/decimal`
+operations. Benchmark semantics are aligned where possible; different rounding
+or representation contracts are identified in benchmark names.
 
 The suite covers bounded powers, roots, division, rational normalization,
 decimal expansion, formatting, binary-float square roots, and encoding
