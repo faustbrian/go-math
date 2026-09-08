@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Documentation
+
+- Clarify root-module version tags and support and vulnerability-reporting
+  routes, and strengthen documentation checks for required files, local links,
+  public package docs, and executable examples.
+
 ### Changed
 
 - Run fuzz verification with deterministic execution-count budgets so CI does
@@ -60,7 +66,7 @@
 - Link the module to the immutable v1.4.0 Golib ecosystem guidance and expose
   the repository-local cohesion command in its contributor entry point.
 
-## 1.0.0 - 2026-08-25
+## 1.0.0 - 2026-08-26
 
 ### Changed
 
