@@ -13,6 +13,7 @@
 
 ### Changed
 
+- Raise the minimum supported and tested Go toolchain to 1.27.0.
 - Run fuzz verification with deterministic execution-count budgets so CI does
   not depend on timer shutdown behavior.
 
