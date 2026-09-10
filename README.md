@@ -15,7 +15,7 @@ provides distinct APIs for signed integers, exact rationals, finite base-10
 decimals, and explicitly inexact binary floats. Use ordinary Go numeric types
 when their fixed width and machine arithmetic are sufficient.
 
-The root module is stable at v1 and requires Go 1.26.6 or newer. Install the
+The root module is stable at v1 and requires Go 1.27.0 or newer. Install the
 current minor release with:
 
 ```sh
