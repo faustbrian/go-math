@@ -7,7 +7,7 @@
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-math.svg)](https://pkg.go.dev/github.com/faustbrian/go-math)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-math?sort=semver)](https://github.com/faustbrian/go-math/releases)
-[![Go](https://img.shields.io/badge/go-1.26.6-00ADD8?logo=go)](https://go.dev/)
+[![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 `math` is an immutable arbitrary-precision numeric foundation for Go. It
@@ -15,7 +15,7 @@ provides distinct APIs for signed integers, exact rationals, finite base-10
 decimals, and explicitly inexact binary floats. Use ordinary Go numeric types
 when their fixed width and machine arithmetic are sufficient.
 
-The root module is stable at v1 and requires Go 1.26.6 or newer. Install the
+The root module is stable at v1 and requires Go 1.27.0 or newer. Install the
 current minor release with:
 
 ```sh

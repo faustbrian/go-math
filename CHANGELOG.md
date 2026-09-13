@@ -4,6 +4,21 @@
 
 ### Changed
 
+- Register the released public API baseline with the shared compatibility gate
+  while retaining the repository-owned API snapshot oracle.
+
+### Documentation
+
+- Clarify root-module version tags and support and vulnerability-reporting
+  routes, and strengthen documentation checks for required files, local links,
+  public package docs, and executable examples.
+- Exclude JavaScript dependency sources from Go API compatibility discovery.
+- Bootstrap the pinned Markdown parser dependencies when documentation checks
+  run in a clean consumer checkout.
+
+### Changed
+
+- Raise the minimum supported and tested Go toolchain to 1.27.0.
 - Run fuzz verification with deterministic execution-count budgets so CI does
   not depend on timer shutdown behavior.
 
@@ -60,7 +75,7 @@
 - Link the module to the immutable v1.4.0 Golib ecosystem guidance and expose
   the repository-local cohesion command in its contributor entry point.
 
-## 1.0.0 - 2026-08-25
+## 1.0.0 - 2026-08-26
 
 ### Changed
 
