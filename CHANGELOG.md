@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Register the released public API baseline with the shared compatibility gate
+  while retaining the repository-owned API snapshot oracle.
+
 ### Documentation
 
 - Clarify root-module version tags and support and vulnerability-reporting
