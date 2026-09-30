@@ -4,11 +4,46 @@ import (
 	"bytes"
 	"context"
 	"math/big"
+	"runtime"
 	"testing"
 	"time"
 
 	gomath "github.com/faustbrian/go-math"
 )
+
+func TestRootPowerPreflightAllocationBudget(t *testing.T) {
+	// Inputs are prepared before measurement; the budget leaves substantial
+	// headroom for bounded work but rejects an avoidable oversized product or
+	// an unnecessary large quotient in the public Root search's power check.
+	for _, test := range []struct {
+		name            string
+		baseBits        uint
+		maximumExponent uint
+		exponent        uint32
+		wantFits        bool
+		maxBytes        uint64
+	}{
+		{"result product", 499_000, 1_000_000, 3, false, 900_000},
+		{"factor square", 600_000, 1_000_000, 2, false, 200_000},
+		{"unneeded quotient", 499_999, 999_999, 2, true, 1_200_000},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			base := new(big.Int).Lsh(big.NewInt(1), test.baseBits)
+			maximum := new(big.Int).Lsh(big.NewInt(1), test.maximumExponent)
+			runtime.GC()
+			var before, after runtime.MemStats
+			runtime.ReadMemStats(&before)
+			fits := powerAtMost(base, test.exponent, maximum)
+			runtime.ReadMemStats(&after)
+			if fits != test.wantFits {
+				t.Fatalf("powerAtMost fits = %t, want %t", fits, test.wantFits)
+			}
+			if allocated := after.TotalAlloc - before.TotalAlloc; allocated > test.maxBytes {
+				t.Fatalf("powerAtMost allocated %d bytes, budget %d", allocated, test.maxBytes)
+			}
+		})
+	}
+}
 
 type cancelAfterValidation struct{ calls int }
 
@@ -86,13 +121,13 @@ func TestInternalBoundaryBranches(t *testing.T) {
 	}
 	cancelled, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := nthRoot(cancelled, big.NewInt(1000), 3, limits); err == nil {
+	if _, err := nthRoot(cancelled, big.NewInt(1000), 3); err == nil {
 		t.Fatal("expected root cancellation")
 	}
 	if _, err := New(1000).Root(&cancelAfterValidation{}, 3, limits); err != context.Canceled {
 		t.Fatalf("root loop error = %v, want context.Canceled", err)
 	}
-	if root, err := nthRoot(context.Background(), big.NewInt(1<<20), 3, tiny); err != nil || root.Sign() < 0 {
+	if root, err := nthRoot(context.Background(), big.NewInt(1<<20), 3); err != nil || root.Sign() < 0 {
 		t.Fatal("bounded root failed")
 	}
 	if _, err := Random(context.Background(), bytes.NewReader([]byte{255, 1}), New(0), New(3), limits); err != nil {

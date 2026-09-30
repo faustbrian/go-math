@@ -250,19 +250,11 @@ func (i Integer) Root(ctx context.Context, degree uint32, limits gomath.Limits) 
 	if degree == 1 {
 		return i, nil
 	}
-	if uint64(degree) >= uint64(abs.BitLen()) {
-		root := big.NewInt(1)
-		if negative {
-			root.Neg(root)
-		}
-
-		return fromBig(root), nil
-	}
 	if degree == 2 {
 		result := new(big.Int).Sqrt(abs)
 		return fromBig(result), nil
 	}
-	root, err := nthRoot(ctx, abs, degree, limits)
+	root, err := nthRoot(ctx, abs, degree)
 	if err != nil {
 		return Integer{}, err
 	}
@@ -550,7 +542,7 @@ func digitValue(character byte) int {
 	return -1
 }
 
-func nthRoot(ctx context.Context, value *big.Int, degree uint32, limits gomath.Limits) (*big.Int, error) {
+func nthRoot(ctx context.Context, value *big.Int, degree uint32) (*big.Int, error) {
 	low := new(big.Int)
 	high := new(big.Int).Lsh(big.NewInt(1), uint(rootUpperBoundShift(value.BitLen(), degree)))
 	one := big.NewInt(1)
@@ -559,7 +551,7 @@ func nthRoot(ctx context.Context, value *big.Int, degree uint32, limits gomath.L
 			return nil, err
 		}
 		mid := new(big.Int).Rsh(new(big.Int).Add(low, high), 1)
-		if powerAtMost(mid, degree, value, limits.MaxIntermediateBits) {
+		if powerAtMost(mid, degree, value) {
 			low = mid
 		} else {
 			high = mid
@@ -569,11 +561,17 @@ func nthRoot(ctx context.Context, value *big.Int, degree uint32, limits gomath.L
 	return low, nil
 }
 
-func powerAtMost(base *big.Int, exponent uint32, maximum *big.Int, maximumBits int) bool {
+// nthRoot passes a positive candidate and a positive budgeted radicand.
+// Division admits each multiplication only when its product fits the radicand.
+func powerAtMost(base *big.Int, exponent uint32, maximum *big.Int) bool {
+	if base.Cmp(big.NewInt(1)) == 0 {
+		return true
+	}
 	result := big.NewInt(1)
 	factor := new(big.Int).Set(base)
 	quotient := new(big.Int)
-	for exponent > 0 {
+	maximumBits := maximum.BitLen()
+	for exponent != 0 {
 		if exponent&1 == 1 {
 			combinedBits := result.BitLen() + factor.BitLen()
 			if combinedBits-1 > maximumBits {
@@ -587,20 +585,19 @@ func powerAtMost(base *big.Int, exponent uint32, maximum *big.Int, maximumBits i
 				return false
 			}
 		}
-		exponent >>= 1
-		if exponent == 0 {
-			break
-		}
-		combinedBits := factor.BitLen() * 2
-		if combinedBits-1 > maximumBits {
-			return false
-		}
-		if combinedBits > maximumBits && factor.Cmp(quotient.Quo(maximum, factor)) > 0 {
-			return false
-		}
-		factor.Mul(factor, factor)
-		if factor.Cmp(maximum) > 0 {
-			return false
+		exponent = exponent >> 1
+		if exponent != 0 {
+			combinedBits := factor.BitLen() * 2
+			if combinedBits-1 > maximumBits {
+				return false
+			}
+			if combinedBits > maximumBits && factor.Cmp(quotient.Quo(maximum, factor)) > 0 {
+				return false
+			}
+			factor.Mul(factor, factor)
+			if factor.Cmp(maximum) > 0 {
+				return false
+			}
 		}
 	}
 
@@ -608,5 +605,5 @@ func powerAtMost(base *big.Int, exponent uint32, maximum *big.Int, maximumBits i
 }
 
 func rootUpperBoundShift(bitLength int, degree uint32) int {
-	return (bitLength-1)/int(degree) + 2
+	return int(uint64(bitLength-1)/uint64(degree)) + 2
 }
