@@ -244,8 +244,19 @@ func (i Integer) Root(ctx context.Context, degree uint32, limits gomath.Limits) 
 		return Integer{}, fmt.Errorf("%w: even root of a negative integer", gomath.ErrDomain)
 	}
 	abs := new(big.Int).Abs(&i.n)
+	if abs.Sign() == 0 {
+		return i, nil
+	}
 	if degree == 1 {
 		return i, nil
+	}
+	if uint64(degree) >= uint64(abs.BitLen()) {
+		root := big.NewInt(1)
+		if negative {
+			root.Neg(root)
+		}
+
+		return fromBig(root), nil
 	}
 	if degree == 2 {
 		result := new(big.Int).Sqrt(abs)
@@ -551,10 +562,7 @@ func nthRoot(ctx context.Context, value *big.Int, degree uint32, limits gomath.L
 			return nil, err
 		}
 		mid := new(big.Int).Rsh(new(big.Int).Add(low, high), 1)
-		power := new(big.Int).Exp(mid, new(big.Int).SetUint64(uint64(degree)), nil)
-		if power.BitLen() > limits.MaxIntermediateBits {
-			high = mid
-		} else if power.Cmp(value) <= 0 {
+		if powerAtMost(mid, degree, value, limits.MaxIntermediateBits) {
 			low = mid
 		} else {
 			high = mid
@@ -562,6 +570,44 @@ func nthRoot(ctx context.Context, value *big.Int, degree uint32, limits gomath.L
 	}
 
 	return low, nil
+}
+
+func powerAtMost(base *big.Int, exponent uint32, maximum *big.Int, maximumBits int) bool {
+	result := big.NewInt(1)
+	factor := new(big.Int).Set(base)
+	quotient := new(big.Int)
+	for exponent > 0 {
+		if exponent&1 == 1 {
+			combinedBits := result.BitLen() + factor.BitLen()
+			if combinedBits-1 > maximumBits {
+				return false
+			}
+			if combinedBits > maximumBits && result.Cmp(quotient.Quo(maximum, factor)) > 0 {
+				return false
+			}
+			result.Mul(result, factor)
+			if result.Cmp(maximum) > 0 {
+				return false
+			}
+		}
+		exponent >>= 1
+		if exponent == 0 {
+			break
+		}
+		combinedBits := factor.BitLen() * 2
+		if combinedBits-1 > maximumBits {
+			return false
+		}
+		if combinedBits > maximumBits && factor.Cmp(quotient.Quo(maximum, factor)) > 0 {
+			return false
+		}
+		factor.Mul(factor, factor)
+		if factor.Cmp(maximum) > 0 {
+			return false
+		}
+	}
+
+	return true
 }
 
 func rootUpperBoundShift(bitLength int, degree uint32) int {

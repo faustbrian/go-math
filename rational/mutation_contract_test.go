@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"math/big"
+	"strconv"
 	"testing"
 
 	gomath "github.com/faustbrian/go-math"
@@ -231,6 +232,9 @@ func TestIntegerExponentAndRoundingBoundaries(t *testing.T) {
 	}
 	if decimalExpansionBits(1, 2) != 7 {
 		t.Fatal("decimal expansion growth accounting changed")
+	}
+	if strconv.IntSize == 64 && decimalExpansionBits(1, math.MaxInt) != ^uint64(0) {
+		t.Fatal("decimal expansion growth accounting wrapped at the host integer limit")
 	}
 
 	quotient, remainder, denominator := big.NewInt(1), big.NewInt(1), big.NewInt(3)

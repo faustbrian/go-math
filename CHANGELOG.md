@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 1.1.2 - 2026-09-30
+
+### Security
+
+- Reject decimal context results whose derived exponents exceed the declared
+  representable range instead of allowing integer wraparound and runaway
+  power-of-ten work.
+- Bound high-degree integer-root comparisons before materializing powers and
+  use saturating base-ten growth accounting for rational decimal scaling.
+- Bound decimal JSON decoding before string allocation, preflight overflow
+  coefficients, and preserve underflow rounding without oversized divisors.
+
+## 1.1.1 - 2026-09-13
+
 ### Changed
 
 - Register the released public API baseline with the shared compatibility gate
