@@ -551,9 +551,6 @@ func digitValue(character byte) int {
 }
 
 func nthRoot(ctx context.Context, value *big.Int, degree uint32, limits gomath.Limits) (*big.Int, error) {
-	if value.Sign() == 0 {
-		return new(big.Int), nil
-	}
 	low := new(big.Int)
 	high := new(big.Int).Lsh(big.NewInt(1), uint(rootUpperBoundShift(value.BitLen(), degree)))
 	one := big.NewInt(1)

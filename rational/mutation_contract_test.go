@@ -54,6 +54,21 @@ func TestConstructionAndParseResourceBoundaries(t *testing.T) {
 	}
 }
 
+func TestDecimalExpansionFractionSaturatesAtHostBoundary(t *testing.T) {
+	if strconv.IntSize != 64 {
+		t.Skip("fractional host-size overflow requires a 64-bit integer")
+	}
+	maximum := new(big.Int).SetUint64(^uint64(0))
+	scale := new(big.Int).Mul(maximum, big.NewInt(1_000_000_000))
+	scale.Quo(scale, big.NewInt(3_321_928_095)).Add(scale, big.NewInt(1))
+	if !scale.IsInt64() {
+		t.Fatal("boundary scale does not fit the host integer")
+	}
+	if got := decimalExpansionBits(1, int(scale.Int64())); got != ^uint64(0) {
+		t.Fatalf("decimal expansion fraction wrapped to %d, want saturation", got)
+	}
+}
+
 func TestPowerResourceBoundaries(t *testing.T) {
 	t.Parallel()
 

@@ -62,3 +62,53 @@ func TestJSONRetainsEscapedDigitBoundaryAndRejectedReceiver(t *testing.T) {
 		t.Fatalf("rejected JSON receiver = %s, error = %v", value, err)
 	}
 }
+
+func TestRoundedCarryRejectsCrossedExponentBudget(t *testing.T) {
+	limits := gomath.DefaultLimits()
+	limits.MaxExponentMagnitude = 2
+	operation := decimal.Context{
+		Precision: 1, MinExponent: -2, MaxExponent: 2,
+		Rounding: decimal.HalfEven, Limits: limits,
+	}
+	for _, test := range []struct {
+		exponent  int32
+		wantLimit bool
+	}{
+		{0, false},
+		{1, true},
+	} {
+		value, err := decimal.FromBig(big.NewInt(99), test.exponent, limits)
+		if err != nil {
+			t.Fatal(err)
+		}
+		result, err := operation.Apply(context.Background(), value)
+		if errors.Is(err, gomath.ErrLimitExceeded) != test.wantLimit {
+			t.Fatalf("rounded carry exponent %d: error = %v, want limit %t", test.exponent, err, test.wantLimit)
+		}
+		if !test.wantLimit && (err != nil || result.Value.String() != "100" || result.Conditions != gomath.ConditionRounded|gomath.ConditionInexact) {
+			t.Fatalf("rounded carry at boundary = %s [%s], %v", result.Value, result.Conditions, err)
+		}
+	}
+}
+
+func TestQuotientRejectsDerivedExponentBeforeContextClamping(t *testing.T) {
+	limits := gomath.DefaultLimits()
+	limits.MaxExponentMagnitude = 2
+	operation := decimal.Context{
+		Precision: 1, MinExponent: -2, MaxExponent: 2,
+		Rounding: decimal.HalfEven, Limits: limits,
+	}
+	for _, exponent := range []int32{-2, 2} {
+		numerator, err := decimal.FromBig(big.NewInt(1), exponent, limits)
+		if err != nil {
+			t.Fatal(err)
+		}
+		denominator, err := decimal.FromBig(big.NewInt(1), -exponent, limits)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := operation.Quo(context.Background(), numerator, denominator); !errors.Is(err, gomath.ErrLimitExceeded) {
+			t.Fatalf("quotient exponent %d: error = %v, want ErrLimitExceeded", 2*exponent, err)
+		}
+	}
+}
