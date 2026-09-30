@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	mathbits "math/bits"
 	"strings"
 
 	gomath "github.com/faustbrian/go-math"
@@ -396,15 +397,20 @@ func decimalExpansionBits(numeratorBits, scale int) uint64 {
 	bits := uint64(numeratorBits)
 	decimalPlaces := uint64(scale)
 	whole := decimalPlaces / billion
-	if whole > (maximum-bits)/bitsPerBillion {
+	high, growth := mathbits.Mul64(whole, bitsPerBillion)
+	if high != 0 {
 		return maximum
 	}
-	growth := whole * bitsPerBillion
 	fraction := decimalPlaces % billion * bitsPerBillion / billion
-	if fraction > maximum-bits-growth {
+	total, carry := mathbits.Add64(bits, growth, 0)
+	if carry != 0 {
 		return maximum
 	}
-	return bits + growth + fraction
+	total, carry = mathbits.Add64(total, fraction, 0)
+	if carry != 0 {
+		return maximum
+	}
+	return total
 }
 
 func pow10(exponent int) *big.Int {
