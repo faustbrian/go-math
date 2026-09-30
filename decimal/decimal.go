@@ -581,7 +581,7 @@ func (d *Decimal) UnmarshalJSON(data []byte) error {
 	}
 	// Each decoded ASCII byte can occupy six bytes as a JSON Unicode escape.
 	// Divide instead of multiplying the parser bound to avoid size overflow.
-	if len(data) > 2 && (len(data)-2)/6 > saturatedTwicePlus(gomath.DefaultLimits().MaxInputDigits, 64) {
+	if (len(data)-2)/6 > saturatedTwicePlus(gomath.DefaultLimits().MaxInputDigits, 64) {
 		return fmt.Errorf("%w: decimal JSON bytes", ErrLimit)
 	}
 	var text string
@@ -883,8 +883,13 @@ func roundCoefficient(coefficient *big.Int, drop uint32, mode RoundingMode) (*bi
 		conditions := gomath.ConditionRounded
 		if sign := coefficient.Sign(); sign != 0 {
 			conditions |= gomath.ConditionInexact
-			if mode == Up || mode == Ceiling && sign > 0 || mode == Floor && sign < 0 {
+			switch mode {
+			case Up:
 				result.SetInt64(int64(sign))
+			case Ceiling:
+				result.SetInt64(int64(max(sign, 0)))
+			case Floor:
+				result.SetInt64(int64(min(sign, 0)))
 			}
 		}
 		return result, conditions

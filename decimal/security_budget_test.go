@@ -112,3 +112,52 @@ func TestQuotientRejectsDerivedExponentBeforeContextClamping(t *testing.T) {
 		}
 	}
 }
+
+func TestJSONWireBudgetPreservesErrorPrecedence(t *testing.T) {
+	// A malformed string at the wire ceiling must reach syntax validation;
+	// one byte beyond it must be rejected before decoding.
+	maximum := 6*(2*gomath.DefaultLimits().MaxInputDigits+64) + 7
+	for _, extra := range []int{0, 1} {
+		input := []byte(`"` + strings.Repeat("9", maximum-1+extra))
+		value := decimal.New(42)
+		err := value.UnmarshalJSON(input)
+		want := gomath.ErrInvalidSyntax
+		if extra != 0 {
+			want = gomath.ErrLimitExceeded
+		}
+		if !errors.Is(err, want) || !value.Equal(decimal.New(42)) {
+			t.Fatalf("wire bytes %d: value=%s error=%v; want unchanged receiver and %v", len(input), value, err, want)
+		}
+	}
+}
+
+func TestOverflowCoefficientAcceptsExactBitBudget(t *testing.T) {
+	limits := gomath.DefaultLimits()
+	limits.MaxIntermediateBits = 7 // Both 10^2 and its clamped coefficient 99 fit.
+	operation := decimal.Context{Precision: 2, MinExponent: -2, MaxExponent: -1, Rounding: decimal.HalfEven, Limits: limits}
+	result, err := operation.Apply(context.Background(), decimal.New(1))
+	wantConditions := gomath.ConditionOverflow | gomath.ConditionRounded | gomath.ConditionInexact
+	if err != nil || result.Value.String() != "0.99" || result.Conditions != wantConditions {
+		t.Fatalf("exact overflow bit budget: %s [%s], %v", result.Value, result.Conditions, err)
+	}
+}
+
+func TestQuotientDenominatorScaleBudget(t *testing.T) {
+	limits := gomath.DefaultLimits()
+	limits.MaxExponentMagnitude = 2
+	operation := decimal.Context{Precision: 1, MinExponent: -2, MaxExponent: 2, Rounding: decimal.HalfEven, Limits: limits}
+	for _, coefficient := range []int64{100, 1000} {
+		numerator, err := decimal.FromBig(big.NewInt(coefficient), -2, limits)
+		if err != nil {
+			t.Fatal(err)
+		}
+		result, err := operation.Quo(context.Background(), numerator, decimal.New(1))
+		if coefficient == 1000 {
+			if !errors.Is(err, gomath.ErrLimitExceeded) {
+				t.Fatalf("denominator scale beyond budget: %s, %v", result.Value, err)
+			}
+		} else if err != nil || result.Value.String() != "1" || result.Conditions != gomath.ConditionRounded {
+			t.Fatalf("exact denominator scale budget: %s [%s], %v", result.Value, result.Conditions, err)
+		}
+	}
+}
