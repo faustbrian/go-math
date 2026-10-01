@@ -579,6 +579,11 @@ func (d *Decimal) UnmarshalJSON(data []byte) error {
 	if len(data) == 0 || data[0] != '"' {
 		return ErrInvalid
 	}
+	// Each decoded ASCII byte can occupy six bytes as a JSON Unicode escape.
+	// Divide instead of multiplying the parser bound to avoid size overflow.
+	if (len(data)-2)/6 > saturatedTwicePlus(gomath.DefaultLimits().MaxInputDigits, 64) {
+		return fmt.Errorf("%w: decimal JSON bytes", ErrLimit)
+	}
 	var text string
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	if err := decoder.Decode(&text); err != nil {
@@ -649,9 +654,20 @@ func (c Context) apply(value Decimal, limits gomath.Limits) (Result, error) {
 	drop := uint32(digits - int(c.Precision))
 	coefficient, rounded := roundCoefficient(&value.coefficient, drop, c.Rounding)
 	conditions = rounded
-	value = fromBig(coefficient, value.exponent+int32(drop))
+	exponent, err := checkedExponent(
+		int64(value.exponent)+int64(drop),
+		limits.MaxExponentMagnitude,
+	)
+	if err != nil {
+		return Result{}, fmt.Errorf("%w: rounded exponent", ErrLimit)
+	}
+	value = fromBig(coefficient, exponent)
 	if decimalDigits(&value.coefficient) > int(c.Precision) {
-		value = fromBig(new(big.Int).Quo(&value.coefficient, big.NewInt(10)), value.exponent+1)
+		exponent, err = checkedExponent(int64(value.exponent)+1, limits.MaxExponentMagnitude)
+		if err != nil {
+			return Result{}, fmt.Errorf("%w: rounded exponent", ErrLimit)
+		}
+		value = fromBig(new(big.Int).Quo(&value.coefficient, big.NewInt(10)), exponent)
 	}
 
 	return c.finish(value, conditions, limits)
@@ -662,14 +678,32 @@ func (c Context) finish(value Decimal, conditions gomath.Condition, limits gomat
 		adjusted := int64(value.exponent) + int64(decimalDigits(&value.coefficient)) - 1
 		if adjusted > int64(c.MaxExponent) {
 			conditions |= gomath.ConditionOverflow | gomath.ConditionRounded | gomath.ConditionInexact
+			exponent, err := checkedExponent(
+				int64(c.MaxExponent)-int64(c.Precision)+1,
+				limits.MaxExponentMagnitude,
+			)
+			if err != nil {
+				return Result{}, fmt.Errorf("%w: overflow exponent", ErrLimit)
+			}
+			// The clamped coefficient contains Precision decimal digits. Reject
+			// its power-of-ten intermediate before allocating it.
+			if 1+estimatedBitGrowth(c.Precision, 3_321_928_095) > uint64(limits.MaxIntermediateBits) {
+				return Result{}, fmt.Errorf("%w: overflow coefficient", ErrLimit)
+			}
 			coefficient := new(big.Int).Sub(pow10(c.Precision), big.NewInt(1))
 			if value.Sign() == -1 {
 				coefficient.Neg(coefficient)
 			}
-			value = fromBig(coefficient, c.MaxExponent-int32(c.Precision)+1)
+			value = fromBig(coefficient, exponent)
 		} else if adjusted < int64(c.MinExponent) {
 			conditions = conditions | gomath.ConditionSubnormal
-			minimumExponent := c.MinExponent - int32(c.Precision) + 1
+			minimumExponent, err := checkedExponent(
+				int64(c.MinExponent)-int64(c.Precision)+1,
+				limits.MaxExponentMagnitude,
+			)
+			if err != nil {
+				return Result{}, fmt.Errorf("%w: underflow exponent", ErrLimit)
+			}
 			if value.exponent < minimumExponent {
 				drop := exponentDifference(minimumExponent, value.exponent)
 				coefficient, rounded := roundCoefficient(&value.coefficient, drop, c.Rounding)
@@ -795,7 +829,12 @@ func divide(
 	if numerator.Sign() != denominator.Sign() {
 		quotient.Neg(quotient)
 	}
-	return fromBig(quotient, int32(resultExponent)), conditions, nil
+	exponent, err := checkedExponent(resultExponent, limits.MaxExponentMagnitude)
+	if err != nil {
+		return Decimal{}, 0, fmt.Errorf("%w: quotient exponent", ErrLimit)
+	}
+
+	return fromBig(quotient, exponent), conditions, nil
 }
 
 func scaleCoefficient(coefficient *big.Int, shift uint32, limits gomath.Limits) (*big.Int, error) {
@@ -836,6 +875,25 @@ func multiplyPowerLimited(coefficient *big.Int, base int64, exponent uint32, lim
 }
 
 func roundCoefficient(coefficient *big.Int, drop uint32, mode RoundingMode) (*big.Int, gomath.Condition) {
+	// A divisor with more decimal places than the coefficient has digits
+	// leaves a quotient of zero and a remainder strictly below half. Decide
+	// rounding directly rather than allocating an input-exponent-sized power.
+	if uint64(drop) > uint64(decimalDigits(coefficient)) {
+		result := new(big.Int)
+		conditions := gomath.ConditionRounded
+		if sign := coefficient.Sign(); sign != 0 {
+			conditions |= gomath.ConditionInexact
+			switch mode {
+			case Up:
+				result.SetInt64(int64(sign))
+			case Ceiling:
+				result.SetInt64(int64(max(sign, 0)))
+			case Floor:
+				result.SetInt64(int64(min(sign, 0)))
+			}
+		}
+		return result, conditions
+	}
 	divisor := pow10(drop)
 	abs := new(big.Int).Abs(coefficient)
 	quotient, remainder := new(big.Int), new(big.Int)

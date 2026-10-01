@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"math"
 	"math/big"
 	"strings"
 	"testing"
@@ -91,6 +92,62 @@ func TestContextReportsExponentConditions(t *testing.T) {
 	if err != nil || !underflowResult.Conditions.Has(gomath.ConditionUnderflow) ||
 		!underflowResult.Conditions.Has(gomath.ConditionSubnormal) {
 		t.Fatalf("underflow = %s, %s, %v", underflowResult.Value, underflowResult.Conditions, err)
+	}
+}
+
+func TestContextRejectsOverflowResultWhoseExponentCannotBeRepresented(t *testing.T) {
+	t.Parallel()
+
+	limits := gomath.DefaultLimits()
+	limits.MaxExponentMagnitude = math.MaxInt32
+	limits.MaxOutputDigits = math.MaxInt
+	operation := decimal.Context{
+		Precision: 4, MinExponent: math.MinInt32 + 1, MaxExponent: math.MinInt32 + 2,
+		Rounding: decimal.HalfEven, Limits: limits,
+	}
+
+	if _, err := operation.Apply(context.Background(), decimal.New(1)); !errors.Is(err, gomath.ErrLimitExceeded) {
+		t.Fatalf("Apply() error = %v, want ErrLimitExceeded", err)
+	}
+}
+
+func TestContextRejectsUnderflowResultWhoseExponentCannotBeRepresented(t *testing.T) {
+	t.Parallel()
+
+	limits := gomath.DefaultLimits()
+	limits.MaxExponentMagnitude = math.MaxInt32
+	limits.MaxOutputDigits = math.MaxInt
+	value, err := decimal.FromBig(big.NewInt(1), -math.MaxInt32, limits)
+	if err != nil {
+		t.Fatal(err)
+	}
+	operation := decimal.Context{
+		Precision: 4, MinExponent: math.MinInt32 + 2, MaxExponent: 0,
+		Rounding: decimal.HalfEven, Limits: limits,
+	}
+
+	if _, err := operation.Apply(context.Background(), value); !errors.Is(err, gomath.ErrLimitExceeded) {
+		t.Fatalf("Apply() error = %v, want ErrLimitExceeded", err)
+	}
+}
+
+func TestContextRejectsRoundedExponentOutsideRepresentableRange(t *testing.T) {
+	t.Parallel()
+
+	limits := gomath.DefaultLimits()
+	limits.MaxExponentMagnitude = math.MaxInt32
+	limits.MaxOutputDigits = math.MaxInt
+	value, err := decimal.FromBig(big.NewInt(99), math.MaxInt32, limits)
+	if err != nil {
+		t.Fatal(err)
+	}
+	operation := decimal.Context{
+		Precision: 1, MinExponent: -math.MaxInt32, MaxExponent: math.MaxInt32,
+		Rounding: decimal.HalfEven, Limits: limits,
+	}
+
+	if _, err := operation.Apply(context.Background(), value); !errors.Is(err, gomath.ErrLimitExceeded) {
+		t.Fatalf("Apply() error = %v, want ErrLimitExceeded", err)
 	}
 }
 

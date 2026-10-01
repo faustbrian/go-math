@@ -185,7 +185,6 @@ func TestMutationNthRootBoundaries(t *testing.T) {
 		}
 	}
 
-	limits := gomath.DefaultLimits()
 	for _, test := range []struct {
 		value, degree int64
 		want          string
@@ -197,15 +196,13 @@ func TestMutationNthRootBoundaries(t *testing.T) {
 		{27, 3, "3"},
 		{28, 3, "3"},
 	} {
-		root, err := nthRoot(context.Background(), big.NewInt(test.value), uint32(test.degree), limits)
+		root, err := nthRoot(context.Background(), big.NewInt(test.value), uint32(test.degree))
 		if err != nil || root.String() != test.want {
 			t.Fatalf("nthRoot(%d,%d) = %s, %v", test.value, test.degree, root, err)
 		}
 	}
 
-	bounded := limits
-	bounded.MaxIntermediateBits = 4
-	root, err := nthRoot(context.Background(), big.NewInt(15), 3, bounded)
+	root, err := nthRoot(context.Background(), big.NewInt(15), 3)
 	if err != nil || root.String() != "2" {
 		t.Fatalf("nthRoot exact power-bit boundary = %s, %v", root, err)
 	}

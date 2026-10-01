@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	mathbits "math/bits"
 	"strings"
 
 	gomath "github.com/faustbrian/go-math"
@@ -215,6 +216,11 @@ func (r Rational) Decimal(scale int, mode gomath.RoundingMode, limits gomath.Lim
 	}
 	absNumerator := new(big.Int).Abs(r.value.Num())
 	scaled := new(big.Int).Mul(absNumerator, pow10(scale))
+	// The logarithmic preflight bounds allocation to the budget plus at most
+	// one multiplication carry bit. Do not let that carry escape the limit.
+	if scaled.BitLen() > limits.MaxIntermediateBits {
+		return "", 0, fmt.Errorf("%w: decimal expansion intermediate", gomath.ErrLimitExceeded)
+	}
 	quotient, remainder := new(big.Int), new(big.Int)
 	quotient.QuoRem(scaled, r.value.Denom(), remainder)
 	conditions := gomath.Condition(0)
@@ -384,7 +390,27 @@ func exponentMagnitude(exponent int64) uint64 {
 func isNegative(value int64) bool { return uint64(value)>>63 == 1 }
 
 func decimalExpansionBits(numeratorBits, scale int) uint64 {
-	return uint64(numeratorBits) + uint64(scale)*3
+	const maximum = ^uint64(0)
+	const billion = uint64(1_000_000_000)
+	const bitsPerBillion = uint64(3_321_928_095) // Upper bound on log2(10).
+
+	bits := uint64(numeratorBits)
+	decimalPlaces := uint64(scale)
+	whole := decimalPlaces / billion
+	high, growth := mathbits.Mul64(whole, bitsPerBillion)
+	if high != 0 {
+		return maximum
+	}
+	fraction := decimalPlaces % billion * bitsPerBillion / billion
+	total, carry := mathbits.Add64(bits, growth, 0)
+	if carry != 0 {
+		return maximum
+	}
+	total, carry = mathbits.Add64(total, fraction, 0)
+	if carry != 0 {
+		return maximum
+	}
+	return total
 }
 
 func pow10(exponent int) *big.Int {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"math/big"
+	"strconv"
 	"testing"
 
 	gomath "github.com/faustbrian/go-math"
@@ -50,6 +51,21 @@ func TestConstructionAndParseResourceBoundaries(t *testing.T) {
 		if err != nil || got.String() != want {
 			t.Fatalf("Parse(%q) = %s, %v; want %s", input, got, err, want)
 		}
+	}
+}
+
+func TestDecimalExpansionFractionSaturatesAtHostBoundary(t *testing.T) {
+	if strconv.IntSize != 64 {
+		t.Skip("fractional host-size overflow requires a 64-bit integer")
+	}
+	maximum := new(big.Int).SetUint64(^uint64(0))
+	scale := new(big.Int).Mul(maximum, big.NewInt(1_000_000_000))
+	scale.Quo(scale, big.NewInt(3_321_928_095)).Add(scale, big.NewInt(1))
+	if !scale.IsInt64() {
+		t.Fatal("boundary scale does not fit the host integer")
+	}
+	if got := decimalExpansionBits(1, int(scale.Int64())); got != ^uint64(0) {
+		t.Fatalf("decimal expansion fraction wrapped to %d, want saturation", got)
 	}
 }
 
@@ -231,6 +247,19 @@ func TestIntegerExponentAndRoundingBoundaries(t *testing.T) {
 	}
 	if decimalExpansionBits(1, 2) != 7 {
 		t.Fatal("decimal expansion growth accounting changed")
+	}
+	if got := decimalExpansionBits(1, 1_000_000_000); got != 3_321_928_096 {
+		t.Fatalf("decimal expansion at one billion places = %d, want 3321928096", got)
+	}
+	if strconv.IntSize == 64 && decimalExpansionBits(1, math.MaxInt) != ^uint64(0) {
+		t.Fatal("decimal expansion growth accounting wrapped at the host integer limit")
+	}
+	if strconv.IntSize == 64 {
+		numeratorBits := int64(9_000_000_000_000_000_000)
+		scale := int64(3_000_000_000_000_000_000)
+		if got := decimalExpansionBits(int(numeratorBits), int(scale)); got != ^uint64(0) {
+			t.Fatalf("decimal expansion sum wrapped to %d, want saturation", got)
+		}
 	}
 
 	quotient, remainder, denominator := big.NewInt(1), big.NewInt(1), big.NewInt(3)
