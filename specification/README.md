@@ -30,6 +30,16 @@ A source digest change MUST NOT silently change behavior. Review the changed
 authority, decision records, compatibility, corpus accounting, peer evidence,
 and executable evidence before updating a pin.
 
+## Release authority review: 2026-10-03
+
+The release-index representation changed, while the four pinned specification,
+testcase-documentation, and archive artifacts remain byte-identical. The
+reviewed index still identifies arithmetic version 1.70, testcase documentation
+2.44, and both testcase archives at 2.62. Only the release-index digest and
+review date advance; decimal decisions, corpus accounting, maintained-peer
+claims, and executable behavior remain unchanged. The online drift gate retains
+all five authorities and exact content checks.
+
 ## Decision matrix
 
 | Decision | Observable contract | Primary evidence | Independent status |
