@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "reviewed_at": "2026-09-30",
+  "reviewed_at": "2026-10-03",
   "review_interval_days": 30,
   "authorities": [
     {
@@ -39,7 +39,7 @@
       "id": "gda-releases",
       "kind": "releases",
       "url": "https://speleotrove.com/decimal/",
-      "sha256": "8caa13414d68d3058fb1f086e40cb4b87fe472724ad212fd5cfba08b253dd205",
+      "sha256": "ee91ce27bffe7a7bdaa9ea05784571e022f256acfab49961dc3ded030d759fa1",
       "specifications": ["General Decimal Arithmetic 1.70", "General Decimal Arithmetic Testcases 2.62"]
     }
   ]

@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 1.1.3 - 2026-10-03
+
+### Changed
+
+- Use the updated immutable shared CI workflow while retaining the pinned
+  library-tool version and numeric compatibility gates.
+
+### Documentation
+
+- Review the changed General Decimal Arithmetic release index while retaining
+  the byte-identical arithmetic, testcase-documentation, and archive sources.
+  Decimal decisions, supported behavior, and conformance inputs stay fixed.
+
 ## 1.1.2 - 2026-09-30
 
 ### Security

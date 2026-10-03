@@ -23,8 +23,10 @@ Each corpus member retains its upstream notice: copyright Mike Cowlishaw
 (1981-2010), with parts copyright IBM Corporation (1981-2008), all rights
 reserved, offered as-is. The testcase documentation footer says it is
 reproduced with permission from IBM. Neither pinned archive contains a separate
-license file, and the publication page does not state a broader redistribution
-license; the repository MIT license does not replace these upstream notices.
+license file. The publication page explicitly covers these testcases under
+the [ICU license](https://speleotrove.com/decimal/ICU-license.html), whose
+permission notice is preserved in [ICU-LICENSE.txt](ICU-LICENSE.txt). The
+repository MIT license does not replace the upstream notices or conditions.
 Any corpus update therefore requires an explicit copyright and redistribution
 review in addition to technical provenance review.
 
