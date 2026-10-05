@@ -648,21 +648,18 @@ func (c Context) apply(value Decimal, limits gomath.Limits) (Result, error) {
 	if value.Sign() == 0 {
 		return c.finish(value, conditions, limits)
 	}
-	if digits <= int(c.Precision) {
+	if uint64(digits) <= uint64(c.Precision) {
 		return c.finish(value, conditions, limits)
 	}
-	drop := uint32(digits - int(c.Precision))
-	coefficient, rounded := roundCoefficient(&value.coefficient, drop, c.Rounding)
-	conditions = rounded
-	exponent, err := checkedExponent(
-		int64(value.exponent)+int64(drop),
-		limits.MaxExponentMagnitude,
-	)
+	drop := int64(digits) - int64(c.Precision)
+	exponent, err := checkedRoundedExponent(value.exponent, drop, limits.MaxExponentMagnitude)
 	if err != nil {
 		return Result{}, fmt.Errorf("%w: rounded exponent", ErrLimit)
 	}
+	coefficient, rounded := roundCoefficient(&value.coefficient, uint32(drop), c.Rounding)
+	conditions = rounded
 	value = fromBig(coefficient, exponent)
-	if decimalDigits(&value.coefficient) > int(c.Precision) {
+	if uint64(decimalDigits(&value.coefficient)) > uint64(c.Precision) {
 		exponent, err = checkedExponent(int64(value.exponent)+1, limits.MaxExponentMagnitude)
 		if err != nil {
 			return Result{}, fmt.Errorf("%w: rounded exponent", ErrLimit)
@@ -671,6 +668,17 @@ func (c Context) apply(value Decimal, limits gomath.Limits) (Result, error) {
 	}
 
 	return c.finish(value, conditions, limits)
+}
+
+func checkedRoundedExponent(exponent int32, drop int64, maximum int32) (int32, error) {
+	// Compare before addition: even a caller-authorized host-sized coefficient
+	// cannot wrap its derived exponent. An admitted nonnegative drop is at most
+	// MaxInt32-MinInt32, so it also fits uint32 before roundCoefficient uses it.
+	if drop < 0 || drop > int64(maximum)-int64(exponent) {
+		return 0, ErrLimit
+	}
+
+	return checkedExponent(int64(exponent)+drop, maximum)
 }
 
 func (c Context) finish(value Decimal, conditions gomath.Condition, limits gomath.Limits) (Result, error) {

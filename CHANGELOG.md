@@ -7,6 +7,15 @@
 - Compare decimal division ratios without truncating large coefficient-digit
   differences or allocating exponent-sized powers of ten, preserving existing
   caller-selected limits and rounding semantics.
+- Reject precision-rounding drops outside the existing decimal exponent range
+  before narrowing the drop or constructing a divisor, including when trusted
+  limits authorize very large coefficients.
+
+### Documentation
+
+- Regenerate the API compatibility baseline from the clean v1.1.3 source so
+  incidental, unpublished dependency-directory packages are not treated as
+  released APIs.
 
 ## 1.1.3 - 2026-10-03
 
