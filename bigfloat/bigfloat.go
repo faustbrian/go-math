@@ -354,7 +354,7 @@ func maximumRenderedDigits(precision uint, exponent int) int {
 }
 
 func roundTripDecimalDigits(precision uint) int {
-	return int((uint64(precision)*30_103+99_999)/100_000) + 1
+	return int((uint64(precision)*30_103+99_999)/100_000) + 1 // #nosec G115 -- Public construction and contexts bound precision by uint32 MaxPrecision; this digit estimate fits even signed 32-bit int.
 }
 
 func integerDigits(value int) int {

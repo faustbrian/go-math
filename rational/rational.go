@@ -188,7 +188,7 @@ func powerExceedsBits(value *big.Int, exponent uint64, maximum int) bool {
 		return false
 	}
 
-	return uint64(bits-1) > (uint64(maximum)-1)/exponent
+	return uint64(bits-1) > (uint64(maximum)-1)/exponent // #nosec G115 -- BitLen zero was handled above; Pow validates a positive host-int maximum before calling this helper.
 }
 
 // Decimal returns a fixed-scale base-10 expansion and any rounding conditions.
@@ -211,7 +211,7 @@ func (r Rational) Decimal(scale int, mode gomath.RoundingMode, limits gomath.Lim
 	if r.value.Denom().BitLen() > limits.MaxIntermediateBits {
 		return "", 0, fmt.Errorf("%w: decimal expansion intermediate", gomath.ErrLimitExceeded)
 	}
-	if decimalExpansionBits(r.value.Num().BitLen(), scale) > uint64(limits.MaxIntermediateBits) {
+	if decimalExpansionBits(r.value.Num().BitLen(), scale) > uint64(limits.MaxIntermediateBits) { // #nosec G115 -- Limits.Validate has admitted a positive host-int bit budget, which fits uint64.
 		return "", 0, fmt.Errorf("%w: decimal expansion intermediate", gomath.ErrLimitExceeded)
 	}
 	absNumerator := new(big.Int).Abs(r.value.Num())
@@ -382,20 +382,20 @@ func saturatedTwicePlus(value, overhead int) int {
 }
 
 func exponentMagnitude(exponent int64) uint64 {
-	mask := uint64(exponent >> 63)
+	mask := uint64(exponent >> 63) // #nosec G115 -- Arithmetic sign extension intentionally becomes an all-zero or all-one unsigned mask.
 
-	return (uint64(exponent) ^ mask) - mask
+	return (uint64(exponent) ^ mask) - mask // #nosec G115 -- Two's-complement unsigned arithmetic computes the full int64 magnitude, including MinInt64.
 }
 
-func isNegative(value int64) bool { return uint64(value)>>63 == 1 }
+func isNegative(value int64) bool { return uint64(value)>>63 == 1 } // #nosec G115 -- Two's-complement conversion intentionally exposes the int64 sign bit.
 
 func decimalExpansionBits(numeratorBits, scale int) uint64 {
 	const maximum = ^uint64(0)
 	const billion = uint64(1_000_000_000)
 	const bitsPerBillion = uint64(3_321_928_095) // Upper bound on log2(10).
 
-	bits := uint64(numeratorBits)
-	decimalPlaces := uint64(scale)
+	bits := uint64(numeratorBits)  // #nosec G115 -- The sole caller supplies nonnegative big.Int.BitLen, which fits uint64.
+	decimalPlaces := uint64(scale) // #nosec G115 -- Decimal rejects negative scale before this helper; a nonnegative host int fits uint64.
 	whole := decimalPlaces / billion
 	high, growth := mathbits.Mul64(whole, bitsPerBillion)
 	if high != 0 {
