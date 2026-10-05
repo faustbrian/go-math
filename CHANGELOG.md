@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Fixed
+
+- Compare decimal division ratios without truncating large coefficient-digit
+  differences or allocating exponent-sized powers of ten, preserving existing
+  caller-selected limits and rounding semantics.
+
 ## 1.1.3 - 2026-10-03
 
 ### Changed

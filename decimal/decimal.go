@@ -1157,13 +1157,49 @@ func checkedExponent(exponent int64, maximum int32) (int32, error) {
 }
 
 func compareRatioPower10(numerator, denominator *big.Int, exponent int64) int {
-	magnitude := uint32(integerMagnitude(exponent))
-	switch compareInt64(exponent, 0) {
-	case 0, 1:
-		return numerator.Cmp(new(big.Int).Mul(denominator, pow10(magnitude)))
-	default:
-		return new(big.Int).Mul(numerator, pow10(magnitude)).Cmp(denominator)
+	sign := numerator.Sign()
+	if sign != denominator.Sign() {
+		return compareInts(sign, denominator.Sign())
 	}
+	if sign == 0 {
+		return 0
+	}
+	left := strings.TrimPrefix(numerator.String(), "-")
+	right := strings.TrimPrefix(denominator.String(), "-")
+	leftLength, rightLength := uint64(len(left)), uint64(len(right))
+	// A string length is at most MaxInt64, and the exponent magnitude is
+	// at most 1<<63, so their sum fits uint64 even for MinInt64.
+	if exponent >= 0 {
+		rightLength += integerMagnitude(exponent)
+	} else {
+		leftLength += integerMagnitude(exponent)
+	}
+	if leftLength < rightLength {
+		return -sign
+	}
+	if leftLength > rightLength {
+		return sign
+	}
+	// Equal-length magnitudes can be compared with virtual trailing zeros.
+	// Once the actual digits end on both sides, the remaining zeros match;
+	// neither a power of ten nor exponent-sized padding is allocated.
+	for index := 0; index < len(left) || index < len(right); index++ {
+		leftDigit, rightDigit := byte('0'), byte('0')
+		if index < len(left) {
+			leftDigit = left[index]
+		}
+		if index < len(right) {
+			rightDigit = right[index]
+		}
+		if leftDigit < rightDigit {
+			return -sign
+		}
+		if leftDigit > rightDigit {
+			return sign
+		}
+	}
+
+	return 0
 }
 
 func compareInts(left, right int) int {
