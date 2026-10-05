@@ -217,7 +217,7 @@ func (i Integer) Pow(ctx context.Context, exponent uint64, limits gomath.Limits)
 	if exponent > limits.MaxPowerExponent {
 		return Integer{}, fmt.Errorf("%w: power exponent", gomath.ErrLimitExceeded)
 	}
-	if exponent != 0 && uint64(i.n.BitLen()) > uint64(limits.MaxIntermediateBits)/exponent+1 {
+	if exponent != 0 && uint64(i.n.BitLen()) > uint64(limits.MaxIntermediateBits)/exponent+1 { // #nosec G115 -- BitLen is nonnegative; validateContext admits a positive host-int bit budget, both fitting uint64.
 		return Integer{}, fmt.Errorf("%w: power result", gomath.ErrLimitExceeded)
 	}
 	result := new(big.Int).Exp(&i.n, new(big.Int).SetUint64(exponent), nil)
@@ -605,5 +605,5 @@ func powerAtMost(base *big.Int, exponent uint32, maximum *big.Int) bool {
 }
 
 func rootUpperBoundShift(bitLength int, degree uint32) int {
-	return int(uint64(bitLength-1)/uint64(degree)) + 2
+	return int(uint64(bitLength-1)/uint64(degree)) + 2 // #nosec G115 -- Root handles zero and degrees 0/1/2; positive BitLen and degree >= 3 bound the quotient plus two within host int.
 }

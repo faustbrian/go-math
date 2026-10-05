@@ -84,7 +84,7 @@ func FromBig(coefficient *big.Int, exponent int32, limits gomath.Limits) (Decima
 	if err := limits.Validate(); err != nil {
 		return Decimal{}, err
 	}
-	if exponentMagnitude(exponent) > uint32(limits.MaxExponentMagnitude) {
+	if exponentMagnitude(exponent) > uint32(limits.MaxExponentMagnitude) { // #nosec G115 -- Limits.Validate has admitted a positive int32 maximum, which fits uint32.
 		return Decimal{}, fmt.Errorf("%w: decimal exponent", gomath.ErrLimitExceeded)
 	}
 	if decimalDigits(coefficient) > limits.MaxInputDigits || coefficient.BitLen() > limits.MaxIntermediateBits {
@@ -200,7 +200,7 @@ func (d Decimal) BigRat() *big.Rat {
 		return new(big.Rat).SetInt(&d.coefficient)
 	}
 	magnitude := exponentMagnitude(d.exponent)
-	if uint32(d.exponent)>>31 == 0 {
+	if uint32(d.exponent)>>31 == 0 { // #nosec G115 -- Two's-complement conversion intentionally exposes the int32 sign bit.
 		return new(big.Rat).SetInt(new(big.Int).Mul(&d.coefficient, pow10(magnitude)))
 	}
 
@@ -278,7 +278,7 @@ func (d Decimal) MulExact(ctx context.Context, other Decimal, limits gomath.Limi
 		return Decimal{}, fmt.Errorf("%w: product coefficient", ErrLimit)
 	}
 
-	return FromBig(new(big.Int).Mul(&d.coefficient, &other.coefficient), int32(exponent), limits)
+	return FromBig(new(big.Int).Mul(&d.coefficient, &other.coefficient), int32(exponent), limits) // #nosec G115 -- The product exponent was checked against the validated positive int32 maximum above.
 }
 
 // QuoExact returns an exact terminating base-10 quotient.
@@ -322,7 +322,7 @@ func (d Decimal) QuoExact(ctx context.Context, other Decimal, limits gomath.Limi
 		return Decimal{}, fmt.Errorf("%w: quotient exponent", ErrLimit)
 	}
 
-	return FromBig(numerator, int32(exponent), limits)
+	return FromBig(numerator, int32(exponent), limits) // #nosec G115 -- The quotient exponent was checked against the validated positive int32 maximum above.
 }
 
 // Add performs context-rounded addition.
@@ -436,8 +436,8 @@ func (d Decimal) Quantize(
 		return Result{Value: value}, err
 	}
 	if d.exponent >= targetExponent {
-		shift := uint32(d.exponent - targetExponent)
-		if shift > uint32(limits.MaxExponentMagnitude) {
+		shift := uint32(d.exponent - targetExponent)     // #nosec G115 -- Ordered admitted int32 exponents differ by at most 2^32-2; unsigned conversion preserves the full difference.
+		if shift > uint32(limits.MaxExponentMagnitude) { // #nosec G115 -- validateWork has admitted a positive int32 maximum, which fits uint32.
 			return Result{}, fmt.Errorf("%w: quantize padding", ErrLimit)
 		}
 		coefficient, err := scaleCoefficient(&d.coefficient, shift, limits)
@@ -449,8 +449,8 @@ func (d Decimal) Quantize(
 		return Result{Value: value}, err
 	}
 
-	drop := uint32(targetExponent - d.exponent)
-	if drop > uint32(limits.MaxExponentMagnitude) {
+	drop := uint32(targetExponent - d.exponent)     // #nosec G115 -- Ordered admitted int32 exponents differ by at most 2^32-2; unsigned conversion preserves the full difference.
+	if drop > uint32(limits.MaxExponentMagnitude) { // #nosec G115 -- validateWork has admitted a positive int32 maximum, which fits uint32.
 		return Result{}, fmt.Errorf("%w: quantize rounding", ErrLimit)
 	}
 	coefficient, conditions := roundCoefficient(&d.coefficient, drop, mode)
@@ -503,9 +503,9 @@ func QuantizedQuo(
 	}
 	switch compareInt64(shift, 0) {
 	case 1:
-		n, err = scaleCoefficient(n, uint32(shift), limits)
+		n, err = scaleCoefficient(n, uint32(shift), limits) // #nosec G115 -- The positive shift was checked against the validated int32 exponent maximum above.
 	case -1:
-		d, err = scaleCoefficient(d, uint32(-shift), limits)
+		d, err = scaleCoefficient(d, uint32(-shift), limits) // #nosec G115 -- The negative shift's magnitude was checked against the validated int32 exponent maximum above.
 	}
 	if err != nil {
 		return Result{}, err
@@ -600,7 +600,7 @@ func (d Decimal) canonicalText() string {
 	if d.IsZero() {
 		zeroText := [2]string{"0", d.String()}
 
-		return zeroText[uint32(d.exponent)>>31]
+		return zeroText[uint32(d.exponent)>>31] // #nosec G115 -- Two's-complement conversion intentionally selects the int32 sign bit, yielding only zero or one.
 	}
 
 	return d.String()
@@ -623,7 +623,7 @@ func (c Context) validate(ctx context.Context) (gomath.Limits, error) {
 	if c.Precision == 0 || c.Precision > limits.MaxPrecision {
 		return gomath.Limits{}, fmt.Errorf("%w: decimal precision", gomath.ErrInvalidArgument)
 	}
-	if uint64(c.Precision) > uint64(limits.MaxIntermediateBits) {
+	if uint64(c.Precision) > uint64(limits.MaxIntermediateBits) { // #nosec G115 -- Limits.Validate has admitted a positive host-int bit budget, which fits uint64.
 		return gomath.Limits{}, fmt.Errorf("%w: decimal precision", ErrLimit)
 	}
 	if !c.Rounding.Valid() {
@@ -632,10 +632,10 @@ func (c Context) validate(ctx context.Context) (gomath.Limits, error) {
 	if c.MinExponent > c.MaxExponent {
 		return gomath.Limits{}, fmt.Errorf("%w: decimal context", gomath.ErrInvalidArgument)
 	}
-	if exponentMagnitude(c.MinExponent) > uint32(limits.MaxExponentMagnitude) {
+	if exponentMagnitude(c.MinExponent) > uint32(limits.MaxExponentMagnitude) { // #nosec G115 -- Limits.Validate has admitted a positive int32 maximum, which fits uint32.
 		return gomath.Limits{}, fmt.Errorf("%w: decimal context", gomath.ErrInvalidArgument)
 	}
-	if exponentMagnitude(c.MaxExponent) > uint32(limits.MaxExponentMagnitude) {
+	if exponentMagnitude(c.MaxExponent) > uint32(limits.MaxExponentMagnitude) { // #nosec G115 -- Limits.Validate has admitted a positive int32 maximum, which fits uint32.
 		return gomath.Limits{}, fmt.Errorf("%w: decimal context", gomath.ErrInvalidArgument)
 	}
 
@@ -648,7 +648,7 @@ func (c Context) apply(value Decimal, limits gomath.Limits) (Result, error) {
 	if value.Sign() == 0 {
 		return c.finish(value, conditions, limits)
 	}
-	if uint64(digits) <= uint64(c.Precision) {
+	if uint64(digits) <= uint64(c.Precision) { // #nosec G115 -- decimalDigits returns a string length, so its nonnegative host-int result fits uint64.
 		return c.finish(value, conditions, limits)
 	}
 	drop := int64(digits) - int64(c.Precision)
@@ -656,10 +656,10 @@ func (c Context) apply(value Decimal, limits gomath.Limits) (Result, error) {
 	if err != nil {
 		return Result{}, fmt.Errorf("%w: rounded exponent", ErrLimit)
 	}
-	coefficient, rounded := roundCoefficient(&value.coefficient, uint32(drop), c.Rounding)
+	coefficient, rounded := roundCoefficient(&value.coefficient, uint32(drop), c.Rounding) // #nosec G115 -- Positive drop passed checkedRoundedExponent; admitted int32 exponent endpoints bound it below 2^32.
 	conditions = rounded
 	value = fromBig(coefficient, exponent)
-	if uint64(decimalDigits(&value.coefficient)) > uint64(c.Precision) {
+	if uint64(decimalDigits(&value.coefficient)) > uint64(c.Precision) { // #nosec G115 -- decimalDigits returns a string length, so its nonnegative host-int result fits uint64.
 		exponent, err = checkedExponent(int64(value.exponent)+1, limits.MaxExponentMagnitude)
 		if err != nil {
 			return Result{}, fmt.Errorf("%w: rounded exponent", ErrLimit)
@@ -695,7 +695,7 @@ func (c Context) finish(value Decimal, conditions gomath.Condition, limits gomat
 			}
 			// The clamped coefficient contains Precision decimal digits. Reject
 			// its power-of-ten intermediate before allocating it.
-			if 1+estimatedBitGrowth(c.Precision, 3_321_928_095) > uint64(limits.MaxIntermediateBits) {
+			if 1+estimatedBitGrowth(c.Precision, 3_321_928_095) > uint64(limits.MaxIntermediateBits) { // #nosec G115 -- Context validation admitted a positive host-int bit budget, which fits uint64.
 				return Result{}, fmt.Errorf("%w: overflow coefficient", ErrLimit)
 			}
 			coefficient := new(big.Int).Sub(pow10(c.Precision), big.NewInt(1))
@@ -742,15 +742,15 @@ func exactAdd(ctx context.Context, left, right Decimal, limits gomath.Limits, su
 		return Decimal{}, err
 	}
 	difference := exponentDifference(left.exponent, right.exponent)
-	if difference > uint32(limits.MaxExponentMagnitude) {
+	if difference > uint32(limits.MaxExponentMagnitude) { // #nosec G115 -- validateWork has admitted a positive int32 maximum, which fits uint32.
 		return Decimal{}, fmt.Errorf("%w: exponent alignment", ErrLimit)
 	}
 	exponent := min(left.exponent, right.exponent)
-	l, err := scaleCoefficient(&left.coefficient, uint32(left.exponent-exponent), limits)
+	l, err := scaleCoefficient(&left.coefficient, uint32(left.exponent-exponent), limits) // #nosec G115 -- exponent is the smaller admitted int32 endpoint; the nonnegative difference passed the alignment budget above.
 	if err != nil {
 		return Decimal{}, fmt.Errorf("%w: aligned coefficient", err)
 	}
-	r, err := scaleCoefficient(&right.coefficient, uint32(right.exponent-exponent), limits)
+	r, err := scaleCoefficient(&right.coefficient, uint32(right.exponent-exponent), limits) // #nosec G115 -- exponent is the smaller admitted int32 endpoint; the nonnegative difference passed the alignment budget above.
 	if err != nil {
 		return Decimal{}, fmt.Errorf("%w: aligned coefficient", err)
 	}
@@ -767,7 +767,7 @@ func exactAdd(ctx context.Context, left, right Decimal, limits gomath.Limits, su
 func checkDecimalOperands(limits gomath.Limits, values ...Decimal) error {
 	for _, value := range values {
 		if value.coefficient.BitLen() > limits.MaxIntermediateBits ||
-			exponentMagnitude(value.exponent) > uint32(limits.MaxExponentMagnitude) {
+			exponentMagnitude(value.exponent) > uint32(limits.MaxExponentMagnitude) { // #nosec G115 -- All public callers validate a positive int32 exponent maximum before operand admission.
 			return fmt.Errorf("%w: decimal operand", ErrLimit)
 		}
 	}
@@ -798,7 +798,7 @@ func divide(
 			return Decimal{}, 0, fmt.Errorf("%w: division scale", ErrLimit)
 		}
 		var err error
-		n, err = scaleCoefficient(n, uint32(scale), limits)
+		n, err = scaleCoefficient(n, uint32(scale), limits) // #nosec G115 -- Positive scale was checked against the validated int32 exponent maximum above.
 		if err != nil {
 			return Decimal{}, 0, err
 		}
@@ -807,7 +807,7 @@ func divide(
 			return Decimal{}, 0, fmt.Errorf("%w: division scale", ErrLimit)
 		}
 		var err error
-		d, err = scaleCoefficient(d, uint32(-scale), limits)
+		d, err = scaleCoefficient(d, uint32(-scale), limits) // #nosec G115 -- Negative scale's magnitude was checked against the validated int32 exponent maximum above.
 		if err != nil {
 			return Decimal{}, 0, err
 		}
@@ -853,7 +853,7 @@ func scaleCoefficient(coefficient *big.Int, shift uint32, limits gomath.Limits) 
 		return new(big.Int).Set(coefficient), nil
 	}
 	growth := estimatedBitGrowth(shift, 3_321_928_094)
-	if uint64(coefficient.BitLen())+growth > uint64(limits.MaxIntermediateBits) {
+	if uint64(coefficient.BitLen())+growth > uint64(limits.MaxIntermediateBits) { // #nosec G115 -- BitLen is nonnegative; all public callers validate a positive host-int bit budget, both fitting uint64.
 		return nil, fmt.Errorf("%w: scaled coefficient", ErrLimit)
 	}
 	result := new(big.Int).Mul(coefficient, pow10(shift))
@@ -870,7 +870,7 @@ func multiplyPowerLimited(coefficient *big.Int, base int64, exponent uint32, lim
 		growthPerBillion = 2_321_928_094
 	}
 	growth := estimatedBitGrowth(exponent, growthPerBillion)
-	if uint64(coefficient.BitLen())+growth > uint64(limits.MaxIntermediateBits) {
+	if uint64(coefficient.BitLen())+growth > uint64(limits.MaxIntermediateBits) { // #nosec G115 -- BitLen is nonnegative; QuoExact validates a positive host-int bit budget, both fitting uint64.
 		return nil, fmt.Errorf("%w: quotient coefficient", ErrLimit)
 	}
 	power := new(big.Int).Exp(big.NewInt(base), new(big.Int).SetUint64(uint64(exponent)), nil)
@@ -886,7 +886,7 @@ func roundCoefficient(coefficient *big.Int, drop uint32, mode RoundingMode) (*bi
 	// A divisor with more decimal places than the coefficient has digits
 	// leaves a quotient of zero and a remainder strictly below half. Decide
 	// rounding directly rather than allocating an input-exponent-sized power.
-	if uint64(drop) > uint64(decimalDigits(coefficient)) {
+	if uint64(drop) > uint64(decimalDigits(coefficient)) { // #nosec G115 -- decimalDigits returns a nonnegative string length, which fits uint64.
 		result := new(big.Int)
 		conditions := gomath.ConditionRounded
 		if sign := coefficient.Sign(); sign != 0 {
@@ -1123,7 +1123,7 @@ func outputDigits(coefficient *big.Int, exponent int32) int {
 		return digits
 	}
 	magnitude := exponentMagnitude(exponent)
-	if uint32(exponent)>>31 == 0 {
+	if uint32(exponent)>>31 == 0 { // #nosec G115 -- Two's-complement conversion intentionally exposes the int32 sign bit.
 		return digits + int(magnitude)
 	}
 	if int64(magnitude) >= int64(digits) {
@@ -1134,19 +1134,19 @@ func outputDigits(coefficient *big.Int, exponent int32) int {
 }
 
 func exponentMagnitude(exponent int32) uint32 {
-	return uint32(integerMagnitude(int64(exponent)))
+	return uint32(integerMagnitude(int64(exponent))) // #nosec G115 -- Any int32 exponent has magnitude at most 2^31, which fits uint32.
 }
 
 func exponentDifference(left, right int32) uint32 {
 	difference := int64(left) - int64(right)
 
-	return uint32(integerMagnitude(difference))
+	return uint32(integerMagnitude(difference)) // #nosec G115 -- The difference of two int32 exponents has magnitude at most 2^32-1, which fits uint32.
 }
 
 func integerMagnitude(value int64) uint64 {
-	mask := uint64(value >> 63)
+	mask := uint64(value >> 63) // #nosec G115 -- Arithmetic sign extension intentionally becomes an all-zero or all-one unsigned mask.
 
-	return (uint64(value) ^ mask) - mask
+	return (uint64(value) ^ mask) - mask // #nosec G115 -- Two's-complement unsigned arithmetic computes the full int64 magnitude, including MinInt64.
 }
 
 func estimatedBitGrowth(exponent uint32, bitsPerBillion uint64) uint64 {
@@ -1161,7 +1161,7 @@ func checkedExponent(exponent int64, maximum int32) (int32, error) {
 		return 0, fmt.Errorf("%w: decimal exponent", ErrLimit)
 	}
 
-	return int32(exponent), nil
+	return int32(exponent), nil // #nosec G115 -- Both signed bounds were checked against the int32 maximum above.
 }
 
 func compareRatioPower10(numerator, denominator *big.Int, exponent int64) int {

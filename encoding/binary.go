@@ -292,11 +292,11 @@ func (r *reader) bytes() ([]byte, error) {
 		return nil, gomath.ErrInvalidSyntax
 	}
 	r.offset += count
-	if length > uint64(len(r.data)-r.offset) {
+	if length > uint64(len(r.data)-r.offset) { // #nosec G115 -- Reader operations maintain offset within data; remaining bytes are a nonnegative host int.
 		return nil, gomath.ErrInvalidSyntax
 	}
-	result := r.data[r.offset : r.offset+int(length)]
-	r.offset += int(length)
+	result := r.data[r.offset : r.offset+int(length)] // #nosec G115 -- The decoded length was bounded by remaining slice bytes above, so it fits int and the slice end.
+	r.offset += int(length)                           // #nosec G115 -- The decoded length was bounded by remaining slice bytes above, so the updated offset fits int.
 
 	return result, nil
 }
@@ -346,7 +346,7 @@ func appendMagnitude(destination []byte, value *big.Int) []byte {
 
 func appendLength(destination []byte, length int) []byte {
 	buffer := make([]byte, binary.MaxVarintLen64)
-	count := binary.PutUvarint(buffer, uint64(length))
+	count := binary.PutUvarint(buffer, uint64(length)) // #nosec G115 -- Both callers supply len(payload), a nonnegative host int that fits uint64.
 
 	return append(destination, buffer[:count]...)
 }
