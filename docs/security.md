@@ -77,6 +77,22 @@ claimed to be preemptible.
 
 ## Release and verification boundary
 
+The false-default `root_release_qualification` workflow selection runs the
+complete root release dry-run with immutable source-built development tooling
+at `c799f67c5f4ac074e24a0172fb41a96cce9dad8e`. It also requires ordinary CI;
+it is separate from both stable `release_dry_run` and the diagnostic-only
+`native_security_qualification`. Combined selections are refused. This route
+does not publish a release or claim a public tooling version.
+
+The exact decimal equivalents in
+[the supported inventory](../.verification/mutation/equivalent-inventory.json)
+were independently reviewed by `cl_report` on 2026-10-06 for the bounded public
+caller and admission domain. Review expires on 2027-01-02 or any source, caller,
+admission, or verifier change. The inventory covers only the four named LIVED
+coordinates, not arbitrary private helper inputs. It preserves native statuses
+and counters; the two loop-negation TIMED OUT mutants remain failures, and no
+release-pass verdict is asserted.
+
 The v1 security patch retains exported API names, numeric representations,
 rounding modes, and error classification while rejecting crossed budgets and
 wrapped exponents. Go 1.27 remains the supported floor. A source fix is not a
