@@ -17,6 +17,13 @@
   incidental, unpublished dependency-directory packages are not treated as
   released APIs.
 
+## 1.1.5 - 2026-10-06
+
+### Changed
+
+- Refresh the documentation TOML parser lock while preserving numeric APIs,
+  arithmetic behavior, and the supported Go toolchain.
+
 ## 1.1.3 - 2026-10-03
 
 ### Changed
