@@ -23,6 +23,14 @@
           "column": 14,
           "contract_domain": "Ratio comparison of admitted coefficient magnitudes used by Context.Quo through divide.",
           "reason": "Changing exponent >= 0 to > 0 differs only at zero. integerMagnitude(0) is zero, so adding it to either effective digit length leaves every comparison and result unchanged."
+        },
+        {
+          "file_name": "decimal.go",
+          "type": "CONDITIONALS_BOUNDARY",
+          "line": 1196,
+          "column": 24,
+          "contract_domain": "Context.Quo through divide compares admitted coefficients with positive validated host-int MaxIntermediateBits; actual decimal digit counts leave room for one extra loop increment.",
+          "reason": "Changing index < digitCount to <= adds only one iteration after both actual digit strings end. Unchanged inner indexing guards supply two virtual zero digits, so the numeric result and operand ownership are unchanged, with no allocation, collaborator, or context check added. Decimal digits are at most ceil(BitLen/3), leaving host-int increment room under the admitted bit budget."
         }
       ]
     }

@@ -91,20 +91,27 @@ admission, or verifier change. Historical run `37388182213` used the published
 verifier `5eba124f842305aecef71fc439aea0f1056429b253fad3b2ed47468f614595a3`
 against identical pre-refactor decimal production bytes and recorded four LIVED
 equivalents and two loop-negation TIMED OUT failures. Those historical outcomes
-remain unchanged; current-source qualification with verifier
-`c28707fd4ce35dd228260de564107c1fb7726e42d4e9ea2bf9e988083e1f3b5b`
-is pending.
+remain unchanged. Historical source-built run `37391154775` at `0fdbdd89`
+also failed with four LIVED and two TIMED OUT mutations.
 
 Ratio comparison now computes its comparison ceiling once from the larger
 actual digit count, not the exponent-adjusted virtual length. Inner digit reads
 and numeric comparison semantics are unchanged. The
 [supported inventory](../.verification/mutation/equivalent-inventory.json)
-retains only the unchanged coordinates at lines 677 and 1180, with the new
-source binding; the two former loop-boundary coordinates no longer exist.
-The source change expires the previous whole-source review, so the current
-binding and retained dispositions require independent review and new hosted
-qualification. No new mutant disposition, timeout conversion, or release-pass
-verdict is asserted.
+retains the unchanged coordinates at lines 677 and 1180 and the exact new
+`1196:24 CONDITIONALS_BOUNDARY` coordinate; the two former loop-boundary
+coordinates no longer exist. The new coordinate was independently approved by
+`/root/cl_report_output_review` on 2026-10-06 for the admitted public caller
+domain. The extra iteration compares two virtual zero digits after both
+strings end, while the admitted bit budget leaves host-int increment room.
+Review expires on 2027-01-02 or a source, caller, admission, or verifier change.
+
+Current-source run `37391975610`, job `112039835003`, at `7114e90b` passed
+exact coverage but failed with three LIVED coordinates: 677, 1180, and 1196.
+It emitted no timeout diagnostics. The updated inventory is bound to verifier
+`c28707fd4ce35dd228260de564107c1fb7726e42d4e9ea2bf9e988083e1f3b5b`;
+qualification consuming that inventory remains pending. Native statuses and
+historical failures are not rewritten, and no release-pass verdict is asserted.
 
 The v1 security patch retains exported API names, numeric representations,
 rounding modes, and error classification while rejecting crossed budgets and
