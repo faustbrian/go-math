@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "packages": [
+    {
+      "module_directory": ".",
+      "package_directory": "decimal",
+      "source_digest": "99a4e3f378ba765c4f6ef3b699da7b16c040b40ff74d7777ecce755046444ce4",
+      "gremlins_version": "v0.6.0",
+      "gremlins_verifier_sha256": "c28707fd4ce35dd228260de564107c1fb7726e42d4e9ea2bf9e988083e1f3b5b",
+      "mutations": [
+        {
+          "file_name": "decimal.go",
+          "type": "INVERT_LOGICAL",
+          "line": 677,
+          "column": 14,
+          "contract_domain": "Positive precision drops derived by Context.apply from admitted coefficients and validated contexts, not arbitrary negative helper arguments.",
+          "reason": "Context.apply is the only production caller and derives a positive host-sized drop. Inverting OR to AND removes early refusal, but checkedExponent still rejects over-limit sums; any signed overflow is near MinInt64, outside the admitted int32 range. Accepted exponents and the public ErrLimit refusal remain unchanged."
+        },
+        {
+          "file_name": "decimal.go",
+          "type": "CONDITIONALS_BOUNDARY",
+          "line": 1180,
+          "column": 14,
+          "contract_domain": "Ratio comparison of admitted coefficient magnitudes used by Context.Quo through divide.",
+          "reason": "Changing exponent >= 0 to > 0 differs only at zero. integerMagnitude(0) is zero, so adding it to either effective digit length leaves every comparison and result unchanged."
+        },
+        {
+          "file_name": "decimal.go",
+          "type": "CONDITIONALS_BOUNDARY",
+          "line": 1196,
+          "column": 24,
+          "contract_domain": "Context.Quo through divide compares admitted coefficients with positive validated host-int MaxIntermediateBits; actual decimal digit counts leave room for one extra loop increment.",
+          "reason": "Changing index < digitCount to <= adds only one iteration after both actual digit strings end. Unchanged inner indexing guards supply two virtual zero digits, so the numeric result and operand ownership are unchanged, with no allocation, collaborator, or context check added. Decimal digits are at most ceil(BitLen/3), leaving host-int increment room under the admitted bit budget."
+        }
+      ]
+    }
+  ]
+}

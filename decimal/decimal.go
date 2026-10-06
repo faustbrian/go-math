@@ -1190,8 +1190,10 @@ func compareRatioPower10(numerator, denominator *big.Int, exponent int64) int {
 	}
 	// Equal-length magnitudes can be compared with virtual trailing zeros.
 	// Once the actual digits end on both sides, the remaining zeros match;
-	// neither a power of ten nor exponent-sized padding is allocated.
-	for index := 0; index < len(left) || index < len(right); index++ {
+	// neither a power of ten nor exponent-sized padding is allocated. The
+	// comparison work is bounded by the larger actual digit count.
+	digitCount := max(len(left), len(right))
+	for index := 0; index < digitCount; index++ {
 		leftDigit, rightDigit := byte('0'), byte('0')
 		if index < len(left) {
 			leftDigit = left[index]

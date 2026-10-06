@@ -18,13 +18,44 @@ on:
         required: false
         default: false
         type: boolean
+      root_release_qualification:
+        description: Qualify the root release with the pinned source-built verifier
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
   security-events: write
 
 jobs:
+  qualification-inputs:
+    name: Validate qualification selection
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Reject combined qualification selectors
+        env:
+          ROOT_QUALIFICATION: ${{ inputs.root_release_qualification || false }}
+          NATIVE_QUALIFICATION: ${{ inputs.native_security_qualification || false }}
+          RELEASE_DRY_RUN: ${{ inputs.release_dry_run || false }}
+        run: |
+          set -euo pipefail
+          selected=0
+          for selector in "${ROOT_QUALIFICATION}" "${NATIVE_QUALIFICATION}" "${RELEASE_DRY_RUN}"; do
+            if [[ "${selector}" == true ]]; then
+              selected=$((selected + 1))
+            fi
+          done
+          if (( selected > 1 )); then
+            echo 'root qualification, native security, and stable release rehearsal are separate selections' >&2
+            exit 1
+          fi
+
   ci:
+    needs: qualification-inputs
     if: github.event_name != 'workflow_dispatch' || !inputs.native_security_qualification
     uses: faustbrian/go-library-tools/.github/workflows/library-ci.yml@be0fd7d09b02c9dff29e6b00a5245ceac3cdfdfb # v1.8.5
     with:
@@ -34,6 +65,7 @@ jobs:
   native-security:
     name: Native security qualification (not release CI)
     if: github.event_name == 'workflow_dispatch' && inputs.native_security_qualification
+    needs: qualification-inputs
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:
@@ -109,14 +141,122 @@ jobs:
           done
           exit "${cleanup_status}"
 
+  root-release-qualification:
+    name: Root release qualification
+    if: github.event_name == 'workflow_dispatch' && inputs.root_release_qualification
+    needs: [qualification-inputs, ci]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    permissions:
+      contents: read
+    env:
+      GOENV: 'off'
+      GOWORK: 'off'
+      GOTOOLCHAIN: local
+      GOMAXPROCS: '2'
+      GOFLAGS: -p=1
+      GOPROXY: https://proxy.golang.org
+      GOSUMDB: sum.golang.org
+      GOPRIVATE: ''
+      GONOPROXY: ''
+      GONOSUMDB: ''
+    steps:
+      - name: Initialize private qualification resources
+        env:
+          TASK_ROOT: ${{ runner.temp }}/math-root-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${TASK_ROOT}/build" "${TASK_ROOT}/modules" "${TASK_ROOT}/tmp" "${TASK_ROOT}/lint" "${TASK_ROOT}/xdg"
+          printf 'GOCACHE=%s\nGOMODCACHE=%s\nGOTMPDIR=%s\nGOLANGCI_LINT_CACHE=%s\nTMPDIR=%s\nXDG_CACHE_HOME=%s\n' \
+            "${TASK_ROOT}/build" "${TASK_ROOT}/modules" "${TASK_ROOT}/tmp" \
+            "${TASK_ROOT}/lint" "${TASK_ROOT}/tmp" "${TASK_ROOT}/xdg" >>"${GITHUB_ENV}"
+      - name: Check out exact producer with complete history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: release-producer
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Check out reviewed tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: faustbrian/go-library-tools
+          ref: c799f67c5f4ac074e24a0172fb41a96cce9dad8e
+          path: release-tooling
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: release-producer/.go-version
+          cache: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24.4.1'
+          package-manager-cache: false
+      - name: Build exact source tooling without a release identity
+        timeout-minutes: 15
+        working-directory: release-tooling
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = c799f67c5f4ac074e24a0172fb41a96cce9dad8e
+          go build -p 1 -trimpath -buildvcs=false -o "${GOTMPDIR}/golib" ./cmd/golib
+          test "$("${GOTMPDIR}/golib" --version)" = dev
+      - name: Qualify the complete root release contract
+        timeout-minutes: 330
+        working-directory: release-producer
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          git rev-parse HEAD 'HEAD^{tree}'
+          git -C ../release-tooling rev-parse HEAD 'HEAD^{tree}'
+          "${GOTMPDIR}/golib" repository check
+          "${GOTMPDIR}/golib" specification check
+          "${GOTMPDIR}/golib" release check --module .
+          "${GOTMPDIR}/golib" release dry-run --module .
+      - name: Retain native root release evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: root-release-qualification
+          path: release-producer/.verification
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+      - name: Remove private qualification resources
+        if: always()
+        timeout-minutes: 5
+        env:
+          TASK_ROOT: ${{ runner.temp }}/math-root-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -uo pipefail
+          cleanup_status=0
+          for target in "${TASK_ROOT}" "${GITHUB_WORKSPACE}/release-producer" "${GITHUB_WORKSPACE}/release-tooling"; do
+            if [[ -d "${target}" ]]; then
+              find "${target}" -type d -exec chmod u+w {} + || cleanup_status=1
+              find "${target}" -depth -delete || cleanup_status=1
+            fi
+            test ! -e "${target}" || cleanup_status=1
+          done
+          exit "${cleanup_status}"
+
   required:
     name: Required
     if: always()
-    needs: ci
+    needs: [qualification-inputs, ci, root-release-qualification]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Require shared workflow
         env:
           CI_RESULT: ${{ needs.ci.result }}
-        run: test "${CI_RESULT}" = success
+          INPUT_RESULT: ${{ needs.qualification-inputs.result }}
+          ROOT_QUALIFICATION: ${{ inputs.root_release_qualification || false }}
+          QUALIFICATION_RESULT: ${{ needs.root-release-qualification.result }}
+        run: |
+          set -euo pipefail
+          test "${INPUT_RESULT}" = success
+          test "${CI_RESULT}" = success
+          if [[ "${ROOT_QUALIFICATION}" == true ]]; then
+            test "${QUALIFICATION_RESULT}" = success
+          else
+            test "${QUALIFICATION_RESULT}" = skipped
+          fi
