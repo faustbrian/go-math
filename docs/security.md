@@ -84,14 +84,27 @@ it is separate from both stable `release_dry_run` and the diagnostic-only
 `native_security_qualification`. Combined selections are refused. This route
 does not publish a release or claim a public tooling version.
 
-The exact decimal equivalents in
-[the supported inventory](../.verification/mutation/equivalent-inventory.json)
+The four decimal equivalents at source `0fdbdd89ba6507fb140038a85888dd47576f3d43`
 were independently reviewed by `cl_report` on 2026-10-06 for the bounded public
 caller and admission domain. Review expires on 2027-01-02 or any source, caller,
-admission, or verifier change. The inventory covers only the four named LIVED
-coordinates, not arbitrary private helper inputs. It preserves native statuses
-and counters; the two loop-negation TIMED OUT mutants remain failures, and no
-release-pass verdict is asserted.
+admission, or verifier change. Historical run `37388182213` used the published
+verifier `5eba124f842305aecef71fc439aea0f1056429b253fad3b2ed47468f614595a3`
+against identical pre-refactor decimal production bytes and recorded four LIVED
+equivalents and two loop-negation TIMED OUT failures. Those historical outcomes
+remain unchanged; current-source qualification with verifier
+`c28707fd4ce35dd228260de564107c1fb7726e42d4e9ea2bf9e988083e1f3b5b`
+is pending.
+
+Ratio comparison now computes its comparison ceiling once from the larger
+actual digit count, not the exponent-adjusted virtual length. Inner digit reads
+and numeric comparison semantics are unchanged. The
+[supported inventory](../.verification/mutation/equivalent-inventory.json)
+retains only the unchanged coordinates at lines 677 and 1180, with the new
+source binding; the two former loop-boundary coordinates no longer exist.
+The source change expires the previous whole-source review, so the current
+binding and retained dispositions require independent review and new hosted
+qualification. No new mutant disposition, timeout conversion, or release-pass
+verdict is asserted.
 
 The v1 security patch retains exported API names, numeric representations,
 rounding modes, and error classification while rejecting crossed budgets and

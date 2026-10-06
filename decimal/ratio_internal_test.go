@@ -75,6 +75,8 @@ func TestRatioComparisonPublicQuotient(t *testing.T) {
 		want                   string
 		conditions             gomath.Condition
 	}{
+		{"equal ratio", 1, 1, "1", 0},
+		{"negative equal ratio", -1, 1, "-1", 0},
 		{"exact small ratio", 1, 8, "0.125", 0},
 		{"exact large ratio", 10, 2, "5", 0},
 		{"repeating", 1, 3, "0.333", gomath.ConditionRounded | gomath.ConditionInexact},
