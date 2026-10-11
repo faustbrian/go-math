@@ -29,9 +29,9 @@ digests remain in the register and history instead of being erased.
 
 Selected mutation gates must finish with zero surviving viable mutants.
 
-Do not add package-local workflows, permanent replacements, machine-specific
-paths, bypass flags, broad mutation exclusions, or aggregate quality metrics
-that hide a failing package.
+Do not fork shared verification workflows or add permanent replacements,
+machine-specific paths, bypass flags, broad mutation exclusions or aggregate
+quality metrics that hide a failing package.
 
 ## Verification
 
@@ -65,12 +65,40 @@ budgets, API, architecture, provenance, decimal conformance and maintained-peer
 comparisons. Preserve the authority fixtures and explicit skip accounting.
 `golib specification check` verifies governance offline; `--online` additionally
 checks the bounded authoritative sources. Select directly affected numeric
-consumers for contract changes. Scheduled and release qualification retain
+consumers for contract changes. Explicit full and release qualification retain
 their full selected gates and release rehearsal. The existing native-security
 and root-release qualification dispatches retain their separate source-built
 verifiers; neither changes the ordinary public verifier identity. Report failing
 or unavailable checks without claiming release readiness. CI/configuration-only
 changes do not require a library release.
+
+## Selected Monthly Assurance
+
+The owner-level [selected-assurance caller](.github/workflows/assurance.yml) is
+configured for main only, on day 22 of each month at 07:43 UTC. It selects one
+of the six declared root-module targets using the shared UTC-week rotation,
+with 30 seconds of active exploration. The production packages are integer,
+rational, decimal, bigfloat and encoding; the selected risk is bounded numeric
+grammar, exponent/precision handling, terminal error categories and canonical
+text/JSON/binary representations. Inline seeds and saved regressions remain
+ordinary tests. A small rotation explores inputs beyond that fixed coverage
+without repeating the full numerical/conformance campaign.
+
+Base-free ordinary checks execute deterministic seeds, not active exploration;
+changed-causal PR checks select affected active smoke. Manual assurance requires
+an exact anchored selector from the root-module fuzz operation in `.golib.yaml`,
+for example `^FuzzParseContextAndRoundTrip$`.
+Empty, unknown and malformed selections refuse. The shared job bounds setup
+and execution to ten minutes, active workers and CPU to two, owned memory to
+2 GiB, native output to 1 MiB and private-cache lifetime. Failure, cancellation,
+exhausted budgets and cleanup refusal remain attributable failures.
+
+This lane does not run mutation or replace Required, the original six
+10,000-iteration fuzz budgets, explicit `make check-full`, GDA vector/skip
+accounting, maintained-peer conformance, architecture/provenance/API checks,
+native-security diagnostics or relevant public-consumer/release qualification.
+The existing daily ordinary schedule remains bounded and monitors sources
+online; it is not the monthly exploration or a full qualification campaign.
 
 ## Adding A Module
 
