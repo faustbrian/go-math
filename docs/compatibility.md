@@ -6,7 +6,8 @@ peer-comparison boundaries are recorded in the
 resolved decision is a compatibility event even when exported Go signatures do
 not change.
 
-The module requires Go 1.27.0 and uses the same toolchain in CI. Public API
+The module minimum remains Go 1.27.0. Development and ordinary CI use
+Go 1.27.2; explicit qualification jobs retain their selected toolchains. Public API
 changes are checked against `api/baseline.txt`. Binary encodings carry a version
 byte; unknown versions fail. Text and JSON forms are canonical strings.
 

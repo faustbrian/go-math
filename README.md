@@ -3,7 +3,7 @@
 [![CI](https://github.com/faustbrian/go-math/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/faustbrian/go-math/actions/workflows/ci.yml)
 [![CodeQL](https://img.shields.io/badge/CodeQL-required-blue)](https://github.com/faustbrian/go-math/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
-[![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
+[![Mutation](https://img.shields.io/badge/mutation-local_or_scheduled-blue)](CONTRIBUTING.md#verification)
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-math.svg)](https://pkg.go.dev/github.com/faustbrian/go-math)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-math?sort=semver)](https://github.com/faustbrian/go-math/releases)
@@ -60,8 +60,12 @@ for the shared design language this module follows.
 
 ## Development
 
-Run `make cohesion` for the repository-owned cohesion contract, `make check`
-for package gates, and `make ci` for the complete repository contract. See
+Use Go 1.27.2 for development; the public minimum remains Go 1.27.0.
+`make check` and `make ci` use bounded local checks with the public pinned
+verifier. `make check-full` selects full assurance, including the original
+conformance, provenance and fuzz campaigns. See
+[CONTRIBUTING.md](CONTRIBUTING.md#verification) for standalone Go tests,
+focused fuzzing, optional mutation and selected release qualification. See
 [CHANGELOG.md](CHANGELOG.md) for releases and [SECURITY.md](SECURITY.md) for
 vulnerability reporting. Use [SUPPORT.md](SUPPORT.md) for support and
 [troubleshooting](docs/troubleshooting.md) for operational diagnosis.

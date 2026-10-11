@@ -1,10 +1,13 @@
 # Verification
 
-`make check` runs formatting, module tidiness, vet, architecture policy, tests,
-race detection, exact production coverage, fuzz smoke, mutation checks,
-examples, consumer compatibility, benchmarks, docs, API compatibility, lint,
-static analysis, vulnerability analysis, and advisory NilAway. `make ci` adds
-the repository and cohesion contracts.
+`make check` and `make ci` run bounded local checks through the public pinned
+verifier; `make ci` also validates repository and cohesion contracts.
+`make check-full` explicitly selects full assurance, retaining architecture,
+provenance, conformance, race, coverage, configured fuzz budgets, mutation,
+consumer compatibility, benchmarks, API, docs, security and advisory NilAway
+as applicable. It is not a substitute for the selected release rehearsal.
+The existing native-security and root-release qualification jobs retain their
+separate reviewed source verifiers and are not ordinary development prerequisites.
 
 The test suite includes algebraic laws, direct `math/big` comparisons,
 independent `apd` and `shopspring/decimal` comparisons, applicable General
