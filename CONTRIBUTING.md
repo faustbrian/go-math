@@ -46,7 +46,7 @@ go test ./decimal -run '^$' -fuzz '^FuzzParseContextAndRoundTrip$' -fuzztime=2s
 
 Select the native target and package affected by your change; ordinary Go tests
 already exercise deterministic fuzz seeds. For shared checks, install the public
-`golib` v2.1.0 release declared in `.golib.yaml` and verify its checksums:
+`golib` v2.4.0 release declared in `.golib.yaml` and verify its checksums:
 
 ```bash
 make check
@@ -106,3 +106,12 @@ Follow [repository structure policy](AGENTS.md#repository-structure). New module
 require an explicit purpose, ownership boundary, dependency review, package
 catalog entry, full quality gates, documentation, changelog, license, security
 policy, compatibility plan, and release dry-run.
+
+## Source documentation
+
+Use the authenticated Tools v2.4.0 release declared in `.golib.yaml`.
+`make source-docs-check` checks all tracked Go documentation without compilation.
+It is required by `make check`, `make check-full` and `make ci`; ordinary shared
+CI selects the same strict check and cannot pass its required result if it fails.
+Separately selected diagnostic and release qualifications keep their reviewed
+source identities and scope. Semantic review and native docs remain necessary.

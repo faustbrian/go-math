@@ -248,3 +248,11 @@ race/leak, fuzz, mutation, benchmark, reverse-consumer and release campaigns wer
 not run for unchanged executable inputs. Historical qualification remains
 historical; exact-source hosted CI and remote-main delivery belong to the
 coordinator.
+
+## Objective enforcement adoption
+
+The local `source-docs-check` target is required by ordinary/full checks and CI.
+Ordinary shared CI uses `source_documentation: check` with immutable Tools
+v2.4.0 and matching authenticated binary/checksum declaration. Separately
+selected qualification source identities and gates remain unchanged. Structural
+checks do not replace this maintained semantic audit or native docs/examples.
