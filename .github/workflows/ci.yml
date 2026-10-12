@@ -112,12 +112,12 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: faustbrian/go-library-tools
-          ref: c799f67c5f4ac074e24a0172fb41a96cce9dad8e
+          ref: d38bf31e7403501075442de9fde78f9479052996
           path: verifier-tooling
           persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: '1.27.0'
+          go-version: '1.27.2'
           cache: false
       - name: Build development qualification tooling
         timeout-minutes: 15
@@ -183,7 +183,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: faustbrian/go-library-tools
-          ref: c799f67c5f4ac074e24a0172fb41a96cce9dad8e
+          ref: d38bf31e7403501075442de9fde78f9479052996
           path: release-tooling
           persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -199,7 +199,7 @@ jobs:
         working-directory: release-tooling
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = c799f67c5f4ac074e24a0172fb41a96cce9dad8e
+          test "$(git rev-parse HEAD)" = d38bf31e7403501075442de9fde78f9479052996
           go build -p 1 -trimpath -buildvcs=false -o "${GOTMPDIR}/golib" ./cmd/golib
           test "$("${GOTMPDIR}/golib" --version)" = dev
       - name: Qualify the complete root release contract
