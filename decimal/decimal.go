@@ -1,5 +1,18 @@
 // Package decimal provides immutable finite base-10 decimals with explicit
-// precision, rounding, exponent, trap, condition, and resource policies.
+// precision, rounding, exponent, trap, condition and resource policies. Exact
+// methods do not round; Context methods use significant decimal digits, and
+// Quantize/QuantizedQuo use fractional scale. These are distinct boundaries.
+//
+// The package supports the finite arithmetic subset recorded in the repository
+// specification decisions, informed by General Decimal Arithmetic 1.70. It does
+// not support NaN, infinity or signed-zero identity, or claim full IEEE
+// conformance.
+//
+// Mutable coefficients and accessors are copied. Value operations may share
+// operands concurrently; pointer unmarshalling requires exclusive receiver
+// access. Context-taking work checks nil/cancellation before admission, but
+// synchronous math/big operations cannot be interrupted mid-call. Methods
+// without a limits argument do not impose a fresh work budget.
 package decimal
 
 import (
@@ -15,54 +28,100 @@ import (
 )
 
 var (
-	ErrInvalid        = gomath.ErrInvalidSyntax
+	// ErrInvalid aliases the shared ErrInvalidSyntax for rejected decimal grammar.
+	ErrInvalid = gomath.ErrInvalidSyntax
+	// ErrDivisionByZero aliases the shared division-by-zero sentinel.
 	ErrDivisionByZero = gomath.ErrDivisionByZero
+	// ErrNonTerminating aliases ErrConversion for a non-terminating exact
+	// quotient.
 	ErrNonTerminating = gomath.ErrConversion
-	ErrLimit          = gomath.ErrLimitExceeded
+	// ErrLimit aliases ErrLimitExceeded for crossed decimal resource bounds.
+	ErrLimit = gomath.ErrLimitExceeded
 )
 
 // RoundingMode is the shared math rounding contract.
 type RoundingMode = gomath.RoundingMode
 
 const (
+	// HalfEven aliases RoundHalfEven: nearest, ties to an even retained digit.
 	HalfEven = gomath.RoundHalfEven
-	HalfUp   = gomath.RoundHalfUp
+	// HalfUp aliases RoundHalfUp: nearest, ties away from zero.
+	HalfUp = gomath.RoundHalfUp
+	// HalfDown aliases RoundHalfDown: nearest, ties toward zero.
 	HalfDown = gomath.RoundHalfDown
-	Down     = gomath.RoundDown
-	Up       = gomath.RoundUp
-	Ceiling  = gomath.RoundCeiling
-	Floor    = gomath.RoundFloor
+	// Down aliases RoundDown: toward zero.
+	Down = gomath.RoundDown
+	// Up aliases RoundUp: away from zero.
+	Up = gomath.RoundUp
+	// Ceiling aliases RoundCeiling: toward positive infinity.
+	Ceiling = gomath.RoundCeiling
+	// Floor aliases RoundFloor: toward negative infinity.
+	Floor = gomath.RoundFloor
 )
 
-// ParseOptions controls the strict finite-decimal grammar.
+// ParseOptions controls the finite-decimal grammar. A minus sign is always
+// accepted; other syntax extensions require explicit opt-in. Limits is
+// mandatory.
 type ParseOptions struct {
-	AllowExponent     bool
-	AllowPlus         bool
-	AllowUnderscores  bool
+	// AllowExponent admits e/E notation with an optionally signed decimal
+	// exponent.
+	AllowExponent bool
+	// AllowPlus admits a leading + on the mantissa.
+	AllowPlus bool
+	// AllowUnderscores admits separators only between mantissa digits.
+	AllowUnderscores bool
+	// AllowLeadingZeros admits multiple leading integer zeros.
 	AllowLeadingZeros bool
-	AllowWhitespace   bool
-	Limits            gomath.Limits
+	// AllowWhitespace trims surrounding Unicode whitespace after raw-byte
+	// admission.
+	AllowWhitespace bool
+	// Limits must pass Validate; an all-zero parser value is invalid.
+	Limits gomath.Limits
 }
 
-// Context defines finite-precision decimal arithmetic. MinExponent and
-// MaxExponent bound the adjusted exponent of normal results.
+// Context defines finite-precision decimal arithmetic. Precision counts
+// significant base-10 coefficient digits, not fractional places. Operands are
+// not pre-rounded: Add, Sub and Mul first compute exact bounded intermediates.
+//
+// The exponent bounds apply to nonzero adjusted exponents (coefficient digits
+// plus stored exponent minus one). Overflow produces a finite value at the
+// maximum permitted magnitude with Overflow, Rounded and Inexact, unless a
+// resource bound rejects it. Subnormal rounding uses MinExponent-Precision+1 as
+// its minimum stored exponent. The zero Context is invalid; zero exponent
+// bounds mean [0, 0], not defaults.
 type Context struct {
-	Precision   uint32
+	// Precision must be positive and within MaxPrecision and MaxIntermediateBits.
+	Precision uint32
+	// MinExponent is the inclusive minimum adjusted exponent for normal results.
 	MinExponent int32
+	// MaxExponent is the inclusive maximum adjusted exponent; it must be at least
+	// MinExponent.
 	MaxExponent int32
-	Rounding    RoundingMode
-	Traps       gomath.Condition
-	Limits      gomath.Limits
+	// Rounding selects one of the seven shared modes; zero means HalfEven.
+	Rounding RoundingMode
+	// Traps selects raised result flags that return ErrTrappedCondition with the
+	// result intact. DivisionByZero instead returns ErrDivisionByZero directly.
+	Traps gomath.Condition
+	// Limits uses DefaultLimits only when the entire value is zero; otherwise
+	// every field must be positive.
+	Limits gomath.Limits
 }
 
-// Result contains a decimal value and every condition raised while producing it.
+// Result contains a decimal and the conditions raised while producing it. A
+// trapped-condition error retains this result. Other failures generally return
+// a zero Result; division by zero retains its DivisionByZero condition.
 type Result struct {
-	Value      Decimal
+	// Value is the finite result, also retained when a result condition is
+	// trapped.
+	Value Decimal
+	// Conditions records raised flags; zero denotes an exact, unrounded result.
 	Conditions gomath.Condition
 }
 
-// Decimal is an immutable coefficient multiplied by 10^exponent. Its zero
-// value is canonical numeric zero.
+// Decimal is an immutable coefficient multiplied by 10^exponent. Its zero value
+// has coefficient and exponent zero. Equal is numerical; SameRepresentation
+// also compares the exponent. Zero has no sign but may retain a nonzero
+// exponent.
 type Decimal struct {
 	coefficient big.Int
 	exponent    int32
@@ -76,7 +135,10 @@ func New(value int64) Decimal {
 	return fromBig(&coefficient, 0)
 }
 
-// FromBig constructs a Decimal by defensively copying coefficient.
+// FromBig copies a non-nil coefficient and preserves the supplied exponent,
+// including trailing-zero and zero representations. It validates limits and
+// checks exponent magnitude, coefficient digits/bits and rendered output
+// digits.
 func FromBig(coefficient *big.Int, exponent int32, limits gomath.Limits) (Decimal, error) {
 	if coefficient == nil {
 		return Decimal{}, fmt.Errorf("%w: nil coefficient", gomath.ErrInvalidArgument)
@@ -97,12 +159,22 @@ func FromBig(coefficient *big.Int, exponent int32, limits gomath.Limits) (Decima
 	return fromBig(coefficient, exponent), nil
 }
 
-// Parse parses a strict non-exponent decimal with default limits.
+// Parse parses a strict non-exponent decimal using DefaultLimits. Digits must
+// precede an optional decimal point and, if it is present, follow it. A leading
+// minus is accepted, but plus, whitespace, underscores and multiple leading
+// zeros are not.
 func Parse(input string) (Decimal, error) {
 	return ParseWithOptions(input, ParseOptions{Limits: gomath.DefaultLimits()})
 }
 
-// ParseWithOptions parses a decimal according to an explicit grammar and limits.
+// ParseWithOptions parses a finite decimal with explicit grammar and valid
+// limits. NaN, infinity and signed-zero identity are not supported.
+//
+// Raw admission uses saturating 2*MaxInputDigits+64 bytes before optional
+// trimming. The mantissa shares one digit budget across integer and fractional
+// digits. Exponent syntax, when enabled, is bounded to eleven token bytes and
+// the configured exponent range. Parsing stops at the first conclusive syntax
+// or limit rejection; errors do not echo input.
 func ParseWithOptions(input string, options ParseOptions) (Decimal, error) {
 	if err := options.Limits.Validate(); err != nil {
 		return Decimal{}, err
@@ -155,7 +227,8 @@ func ParseWithOptions(input string, options ParseOptions) (Decimal, error) {
 	return FromBig(&coefficient, exponent, options.Limits)
 }
 
-// MustParse parses a trusted constant and panics on invalid input.
+// MustParse applies Parse to a trusted constant and panics on any error,
+// including a crossed default resource limit. Use Parse for untrusted input.
 func MustParse(input string) Decimal {
 	value, err := Parse(input)
 	if err != nil {
@@ -175,7 +248,10 @@ func (d Decimal) Exponent() int32 { return d.exponent }
 // representation has a positive exponent.
 func (d Decimal) Scale() int32 { return -d.exponent }
 
-// String returns the exact non-exponent representation.
+// String returns the exact expanded, non-exponent representation, retaining
+// fractional trailing zeros. Positive-exponent zero expands to multiple zeros;
+// MarshalText instead canonicalizes that zero. String has no fresh limits
+// argument.
 func (d Decimal) String() string {
 	negative := d.coefficient.Sign() < 0
 	digits := new(big.Int).Abs(&d.coefficient).String()
@@ -194,7 +270,8 @@ func (d Decimal) String() string {
 	return digits
 }
 
-// BigRat returns the exact value as a mutable rational copy.
+// BigRat returns the exact value as an independent mutable rational. Conversion
+// may construct exponent-sized powers of ten and has no fresh resource budget.
 func (d Decimal) BigRat() *big.Rat {
 	if d.exponent == 0 {
 		return new(big.Rat).SetInt(&d.coefficient)
@@ -219,7 +296,8 @@ func (d Decimal) Neg() Decimal { return fromBig(new(big.Int).Neg(&d.coefficient)
 // Abs returns |d| while retaining its exponent.
 func (d Decimal) Abs() Decimal { return fromBig(new(big.Int).Abs(&d.coefficient), d.exponent) }
 
-// Cmp compares decimals numerically without converting through binary floating point.
+// Cmp compares decimals numerically without converting through binary floating
+// point.
 func (d Decimal) Cmp(other Decimal) int {
 	if d.Sign() != other.Sign() {
 		return compareInts(d.Sign(), other.Sign())
@@ -252,17 +330,20 @@ func (d Decimal) SameRepresentation(other Decimal) bool {
 	return d.exponent == other.exponent && d.coefficient.Cmp(&other.coefficient) == 0
 }
 
-// AddExact returns the exact sum under explicit resource bounds.
+// AddExact returns the exact sum, aligned to the smaller stored exponent, under
+// explicit coefficient, exponent-alignment and output bounds.
 func (d Decimal) AddExact(ctx context.Context, other Decimal, limits gomath.Limits) (Decimal, error) {
 	return exactAdd(ctx, d, other, limits, false)
 }
 
-// SubExact returns the exact difference under explicit resource bounds.
+// SubExact returns the exact difference with the same alignment and resource
+// policy as AddExact.
 func (d Decimal) SubExact(ctx context.Context, other Decimal, limits gomath.Limits) (Decimal, error) {
 	return exactAdd(ctx, d, other, limits, true)
 }
 
-// MulExact returns the exact product under explicit resource bounds.
+// MulExact returns the exact coefficient product with the exponents added,
+// rejecting crossed intermediate, exponent and output budgets without rounding.
 func (d Decimal) MulExact(ctx context.Context, other Decimal, limits gomath.Limits) (Decimal, error) {
 	if err := validateWork(ctx, limits); err != nil {
 		return Decimal{}, err
@@ -281,7 +362,10 @@ func (d Decimal) MulExact(ctx context.Context, other Decimal, limits gomath.Limi
 	return FromBig(new(big.Int).Mul(&d.coefficient, &other.coefficient), int32(exponent), limits) // #nosec G115 -- The product exponent was checked against the validated positive int32 maximum above.
 }
 
-// QuoExact returns an exact terminating base-10 quotient.
+// QuoExact returns an exact terminating base-10 quotient. After reduction, a
+// denominator with factors other than two and five returns ErrNonTerminating
+// (the shared ErrConversion). A zero divisor returns ErrDivisionByZero. The
+// quotient is numerical, not a promise to retain either operand's scale.
 func (d Decimal) QuoExact(ctx context.Context, other Decimal, limits gomath.Limits) (Decimal, error) {
 	if err := validateWork(ctx, limits); err != nil {
 		return Decimal{}, err
@@ -366,7 +450,9 @@ func (c Context) Mul(ctx context.Context, left, right Decimal) (Result, error) {
 	return c.apply(exact, limits)
 }
 
-// Quo performs context-rounded division.
+// Quo rounds the exact ratio to context precision without pre-rounding
+// operands. A zero divisor, including 0/0, returns ErrDivisionByZero and
+// DivisionByZero, not a fabricated infinity/NaN or a trapped-condition error.
 func (c Context) Quo(ctx context.Context, numerator, denominator Decimal) (Result, error) {
 	limits, err := c.validate(ctx)
 	if err != nil {
@@ -408,8 +494,11 @@ func (c Context) Apply(ctx context.Context, value Decimal) (Result, error) {
 	return c.apply(value, limits)
 }
 
-// Quantize rounds or pads d to an explicit number of fractional decimal
-// places. A negative scale rounds to positions left of the decimal point.
+// Quantize rounds or pads d to exactly scale fractional places (exponent
+// -scale). A negative scale rounds to positions left of the point. Discarding
+// coefficient digits raises Rounded even if they are all zero; a nonzero
+// remainder also raises Inexact. Exact padding raises neither. No context trap
+// mask is applied.
 func (d Decimal) Quantize(
 	ctx context.Context,
 	scale int32,
@@ -462,8 +551,11 @@ func (d Decimal) Quantize(
 	return Result{Value: value, Conditions: conditions}, nil
 }
 
-// QuantizedQuo divides numerator by denominator and rounds exactly once to an
-// explicit fractional scale.
+// QuantizedQuo rounds the exact quotient once to exponent -scale, avoiding
+// precision-rounding followed by scale-rounding. Negative scales are supported.
+// A nonzero remainder raises Rounded and Inexact; exact division raises
+// neither. A zero divisor returns ErrDivisionByZero with DivisionByZero; no
+// traps apply.
 func QuantizedQuo(
 	ctx context.Context,
 	numerator Decimal,
@@ -536,7 +628,9 @@ func QuantizedQuo(
 	return Result{Value: value, Conditions: conditions}, nil
 }
 
-// Clamp restricts d to the inclusive numeric interval.
+// Clamp restricts d to the inclusive numeric interval [minimum, maximum]. An
+// inverted interval returns ErrInvalid (the shared ErrInvalidSyntax). At an
+// equal bound, d's own representation is retained.
 func (d Decimal) Clamp(minimum, maximum Decimal) (Decimal, error) {
 	if minimum.Cmp(maximum) > 0 {
 		return Decimal{}, fmt.Errorf("%w: minimum exceeds maximum", ErrInvalid)
@@ -551,10 +645,14 @@ func (d Decimal) Clamp(minimum, maximum Decimal) (Decimal, error) {
 	return d, nil
 }
 
-// MarshalText returns a canonical exact numeric representation.
+// MarshalText returns expanded base-10 text, canonicalizing positive-exponent
+// zero to "0". It preserves numeric value, not arbitrary coefficient/exponent
+// identity; use the binary codec when SameRepresentation is required.
 func (d Decimal) MarshalText() ([]byte, error) { return []byte(d.canonicalText()), nil }
 
-// UnmarshalText replaces d with a strict parsed value.
+// UnmarshalText parses strict text with DefaultLimits into a non-nil receiver.
+// Failure leaves the receiver unchanged; success copies the value and retains
+// no input bytes. Mutation requires exclusive access to the receiver.
 func (d *Decimal) UnmarshalText(text []byte) error {
 	if d == nil {
 		return fmt.Errorf("%w: nil Decimal receiver", gomath.ErrInvalidArgument)
@@ -568,10 +666,15 @@ func (d *Decimal) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// MarshalJSON encodes d as a JSON string to prevent precision loss.
+// MarshalJSON emits MarshalText's form as a JSON string, never a JSON number.
+// It preserves numeric value rather than arbitrary representation identity.
 func (d Decimal) MarshalJSON() ([]byte, error) { return json.Marshal(d.canonicalText()) }
 
-// UnmarshalJSON accepts only a JSON string containing a strict decimal.
+// UnmarshalJSON decodes a JSON string and applies Parse with DefaultLimits.
+// Numeric tokens are rejected. Raw wire bytes are bounded before string
+// decoding with allowance for six-byte Unicode escapes. A nil receiver is
+// invalid; errors leave the receiver unchanged. Success retains no input and
+// requires exclusive receiver access.
 func (d *Decimal) UnmarshalJSON(data []byte) error {
 	if d == nil {
 		return fmt.Errorf("%w: nil Decimal receiver", gomath.ErrInvalidArgument)

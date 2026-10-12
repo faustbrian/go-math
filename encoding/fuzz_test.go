@@ -9,6 +9,10 @@ import (
 	mathencoding "github.com/faustbrian/go-math/encoding"
 )
 
+// FuzzBinaryDecoders varies raw frames under a 4096-bit intermediate budget for
+// all four decoders. Accepted frames must re-encode byte-identically, not
+// merely equal numerically; rejected frames retain one bounded terminal error
+// category.
 func FuzzBinaryDecoders(f *testing.F) {
 	f.Add([]byte("GM\x01\x01\x00\x00"))
 	f.Add([]byte{})

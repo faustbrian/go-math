@@ -11,6 +11,10 @@ import (
 	"github.com/faustbrian/go-math/decimal"
 )
 
+// FuzzParseContextAndRoundTrip varies grammar flags with 256 input digits, 512
+// output digits and exponent magnitude 256. Accepted values retain numeric
+// text/JSON identity and their additive inverse under a bounded context; errors
+// retain one bounded terminal category.
 func FuzzParseContextAndRoundTrip(f *testing.F) {
 	for _, seed := range []string{
 		"0", "-1.25", "1e10", "0.000001", strings.Repeat("9", 256),
@@ -79,6 +83,10 @@ func assertFuzzDecimalError(t *testing.T, err error) {
 	}
 }
 
+// FuzzJSONDecoding sends arbitrary JSON bytes through encoding/json into an
+// existing Decimal. Failures must preserve its representation; accepted strings
+// must re-encode as JSON strings and retain the decoded representation on the
+// next round trip.
 func FuzzJSONDecoding(f *testing.F) {
 	for _, seed := range [][]byte{
 		[]byte(`"0"`), []byte(`"-1.25"`), []byte(`1.25`),

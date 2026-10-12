@@ -39,6 +39,10 @@ func TestGeneralDecimalArithmeticVectors(t *testing.T) {
 	}
 }
 
+// runGDAVectors binds each pinned corpus file to exact executed/skipped
+// accounting. The oracle compares numeric value and supported conditions, not
+// representation or full exceptional-value conformance; unsupported
+// finite/extended boundaries are counted explicitly.
 func runGDAVectors(t *testing.T, path string, wantExecuted, wantSkipped int) {
 	t.Helper()
 	file, err := os.Open(path)
@@ -202,6 +206,10 @@ func hasGDACondition(fields []string, wanted string) bool {
 	return false
 }
 
+// parseGDAValue adapts corpus spelling to the finite parser (leading-point
+// forms, exponent notation and optional plus). Unsupported
+// NaN/infinity/precision-marker forms remain outside the governed numeric
+// oracle rather than manufacturing package values.
 func parseGDAValue(text string) (decimal.Decimal, bool) {
 	text = strings.Trim(text, "'")
 	if strings.ContainsAny(text, "#") || strings.EqualFold(text, "nan") || strings.Contains(strings.ToLower(text), "inf") {

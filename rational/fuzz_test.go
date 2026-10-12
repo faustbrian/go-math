@@ -10,6 +10,10 @@ import (
 	"github.com/faustbrian/go-math/rational"
 )
 
+// FuzzParseRoundTrip varies integer/fraction text under per-component 256-digit
+// limits. Accepted normalized values survive String parsing and JSON-string
+// encoding; rejected input keeps one bounded syntax, limit, argument or
+// zero-denominator category.
 func FuzzParseRoundTrip(f *testing.F) {
 	for _, seed := range []string{
 		"0", "1/2", "-22/7", "100/25", strings.Repeat("9", 256) + "/1",

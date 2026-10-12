@@ -10,6 +10,10 @@ import (
 	"github.com/faustbrian/go-math/bigfloat"
 )
 
+// FuzzParse varies bases 0/2/10/16 with 1..64 binary bits and a 256-byte text
+// ceiling. Half-even text recovery must preserve numeric value and zero sign;
+// no directed-rounding recovery property is asserted. Rejections retain bounded
+// syntax/limit diagnostics.
 func FuzzParse(f *testing.F) {
 	for _, seed := range []string{
 		"0", "-1.25", "0x1.8p+2", "+Inf",

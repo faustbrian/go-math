@@ -1,4 +1,12 @@
 // Package integer provides immutable arbitrary-precision signed integers.
+// Constructors and Big copy mutable storage; copying an Integer and concurrent
+// read/value operations do not mutate shared operands. The zero value is zero.
+//
+// Arithmetic taking a context checks nil/cancellation, limits and operand bit
+// lengths before work or zero/identity shortcuts. Synchronous math/big
+// primitives are not preemptible; higher-degree roots and random rejection
+// loops add checkpoints. Methods without a limits argument do not impose a
+// fresh budget.
 package integer
 
 import (
@@ -16,14 +24,24 @@ import (
 // represents zero.
 type Integer struct{ n big.Int }
 
-// ParseOptions controls the strict integer grammar. Base must be in [2, 36].
+// ParseOptions controls the integer grammar and mandatory resource bounds. The
+// zero options value is invalid; signs are accepted unless RejectSign is set.
 type ParseOptions struct {
-	Base              int
-	AllowUnderscores  bool
+	// Base is required and must be in [2, 36]; alphabetic digits are
+	// case-insensitive.
+	Base int
+	// AllowUnderscores admits separators only between valid digits.
+	AllowUnderscores bool
+	// AllowLeadingZeros admits multiple leading zeros; otherwise only a single
+	// zero is valid.
 	AllowLeadingZeros bool
-	AllowWhitespace   bool
-	RejectSign        bool
-	Limits            gomath.Limits
+	// AllowWhitespace trims surrounding Unicode whitespace after raw-byte
+	// admission.
+	AllowWhitespace bool
+	// RejectSign rejects both leading + and - signs when true.
+	RejectSign bool
+	// Limits must pass Validate; an all-zero value does not select defaults.
+	Limits gomath.Limits
 }
 
 // Zero returns the canonical integer zero.
@@ -45,7 +63,9 @@ func NewUnsigned(value uint64) Integer {
 	return result
 }
 
-// FromBig constructs an Integer by defensively copying value.
+// FromBig copies a non-nil value after validating limits and
+// MaxIntermediateBits. It does not impose the textual input or output digit
+// ceilings.
 func FromBig(value *big.Int, limits gomath.Limits) (Integer, error) {
 	if value == nil {
 		return Integer{}, fmt.Errorf("%w: nil big.Int", gomath.ErrInvalidArgument)
@@ -60,7 +80,13 @@ func FromBig(value *big.Int, limits gomath.Limits) (Integer, error) {
 	return fromBig(value), nil
 }
 
-// Parse parses text without trimming it or inferring a base.
+// Parse parses a signed integer in the explicit base; no prefix or base
+// inference is performed. The optional whitespace policy trims only the ends.
+//
+// Before trimming, the raw byte ceiling is saturating 2*MaxInputDigits+64.
+// Within it, parsing stops at the first conclusive syntax or digit-limit
+// failure. Malformed grammar wraps ErrInvalidSyntax; crossed digit/bit bounds
+// wrap ErrLimitExceeded. Diagnostics do not include the input.
 func Parse(text string, options ParseOptions) (Integer, error) {
 	if err := validateLimits(options.Limits); err != nil {
 		return Integer{}, err
@@ -161,7 +187,7 @@ func (i Integer) Mul(ctx context.Context, other Integer, limits gomath.Limits) (
 }
 
 // Quo returns the quotient truncated toward zero under explicit resource
-// bounds.
+// bounds. A zero divisor returns ErrDivisionByZero after operand admission.
 func (i Integer) Quo(ctx context.Context, divisor Integer, limits gomath.Limits) (Integer, error) {
 	quotient, _, err := i.QuoRem(ctx, divisor, limits)
 
@@ -169,7 +195,9 @@ func (i Integer) Quo(ctx context.Context, divisor Integer, limits gomath.Limits)
 }
 
 // QuoRem returns a quotient truncated toward zero and a remainder with i's sign
-// under explicit resource bounds.
+// (or zero). It satisfies i = quotient*divisor + remainder and
+// |remainder| < |divisor|. A zero divisor returns ErrDivisionByZero after
+// operand admission; failure returns zero for both results.
 func (i Integer) QuoRem(ctx context.Context, divisor Integer, limits gomath.Limits) (Integer, Integer, error) {
 	if err := validateContext(ctx, limits); err != nil {
 		return Integer{}, Integer{}, err
@@ -188,7 +216,8 @@ func (i Integer) QuoRem(ctx context.Context, divisor Integer, limits gomath.Limi
 }
 
 // Mod returns the Euclidean modulus in [0, modulus). Modulus must be positive
-// and work is performed under explicit resource bounds.
+// and work is performed under explicit resource bounds. Zero returns
+// ErrDivisionByZero; a negative modulus returns ErrDomain.
 func (i Integer) Mod(ctx context.Context, modulus Integer, limits gomath.Limits) (Integer, error) {
 	if err := validateContext(ctx, limits); err != nil {
 		return Integer{}, err
@@ -206,7 +235,8 @@ func (i Integer) Mod(ctx context.Context, modulus Integer, limits gomath.Limits)
 	return fromBig(new(big.Int).Mod(&i.n, &modulus.n)), nil
 }
 
-// Pow returns i raised to a nonnegative exponent.
+// Pow returns i raised to a nonnegative exponent, including 0^0 = 1. Exponent
+// and operand budgets are checked even for an exponent of zero.
 func (i Integer) Pow(ctx context.Context, exponent uint64, limits gomath.Limits) (Integer, error) {
 	if err := validateContext(ctx, limits); err != nil {
 		return Integer{}, err
@@ -225,7 +255,10 @@ func (i Integer) Pow(ctx context.Context, exponent uint64, limits gomath.Limits)
 	return checked(result, limits)
 }
 
-// Root returns the integer nth root truncated toward zero.
+// Root returns the integral nth root truncated toward zero. A zero degree or an
+// even root of a negative value returns ErrDomain. Higher-degree search checks
+// ctx between candidates; the square-root primitive cannot be interrupted
+// mid-call.
 func (i Integer) Root(ctx context.Context, degree uint32, limits gomath.Limits) (Integer, error) {
 	if err := validateContext(ctx, limits); err != nil {
 		return Integer{}, err
@@ -286,6 +319,7 @@ func Max(left, right Integer) Integer {
 }
 
 // Clamp restricts value to the inclusive interval [minimum, maximum].
+// An inverted interval returns ErrInvalidArgument.
 func Clamp(value, minimum, maximum Integer) (Integer, error) {
 	if minimum.Cmp(maximum) > 0 {
 		return Integer{}, fmt.Errorf("%w: inverted clamp interval", gomath.ErrInvalidArgument)
@@ -330,7 +364,16 @@ func LCM(ctx context.Context, left, right Integer, limits gomath.Limits) (Intege
 	return checked(result, limits)
 }
 
-// Random samples uniformly from [minimum, maximum) using only source.
+// Random samples from [minimum, maximum) using bounded rejection sampling and
+// the caller's reader. The interval must be nonempty and source non-nil.
+// Uniform output requires uniform source bytes; choose the source's security
+// policy explicitly.
+//
+// Cancellation is checked before each sampling attempt, not inside io.ReadFull
+// or a blocking Read call. Exhausting MaxRandomAttempts returns
+// ErrLimitExceeded. A reader failure wraps ErrRandomSource and preserves the
+// exact caller cause for errors.Is/errors.As; the outer message never formats
+// that cause.
 func Random(ctx context.Context, source io.Reader, minimum, maximum Integer, limits gomath.Limits) (Integer, error) {
 	if err := validateContext(ctx, limits); err != nil {
 		return Integer{}, err
@@ -372,8 +415,12 @@ func Random(ctx context.Context, source io.Reader, minimum, maximum Integer, lim
 
 type randomSourceError struct{ cause error }
 
+// Error returns the fixed random-source category without formatting the caller
+// cause.
 func (*randomSourceError) Error() string { return gomath.ErrRandomSource.Error() }
 
+// Unwrap returns a fresh slice containing ErrRandomSource and the caller cause.
+// Cause traversal preserves identity, not a redaction guarantee for the cause.
 func (e *randomSourceError) Unwrap() []error {
 	return []error{gomath.ErrRandomSource, e.cause}
 }

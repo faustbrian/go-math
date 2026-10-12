@@ -1,4 +1,15 @@
-// Package encoding provides optional deterministic codecs for math values.
+// Package encoding provides optional deterministic version-1 codecs for math
+// values. These are package-owned GM frames, not standard interchange formats.
+// Integer/rational frames encode normalized values; decimal retains coefficient
+// and exponent; Float retains precision, rounding and signed zero.
+//
+// Decoders first validate Limits and admit at most MaxIntermediateBits/8+64
+// input bytes, then require the expected header/type, complete payload and
+// canonical representation. Malformed frames return input-free
+// ErrInvalidSyntax; constructor resource or argument errors remain classified.
+// Decoders borrow input only for the synchronous call; callers must not mutate
+// it during decoding. Encoders return independent buffers but have no
+// caller-configurable work budget.
 package encoding
 
 import (
@@ -24,14 +35,16 @@ const (
 
 const magic = "GM"
 
-// MarshalInteger returns the versioned deterministic integer encoding.
+// MarshalInteger returns a new version-1 deterministic signed-magnitude frame.
+// It has no limits argument and allocates for the already constructed value.
 func MarshalInteger(value integer.Integer) ([]byte, error) {
 	result := header(kindInteger)
 
 	return appendSigned(result, value.Big()), nil
 }
 
-// UnmarshalInteger decodes a versioned integer under explicit limits.
+// UnmarshalInteger decodes a canonical version-1 integer under explicit limits.
+// The returned value retains no input buffer; failure returns the zero value.
 func UnmarshalInteger(data []byte, limits gomath.Limits) (integer.Integer, error) {
 	reader, err := newReader(data, kindInteger, limits)
 	if err != nil {
@@ -49,6 +62,8 @@ func UnmarshalInteger(data []byte, limits gomath.Limits) (integer.Integer, error
 	if err != nil {
 		return integer.Integer{}, err
 	}
+	// Structural varint decoding accepts overlong lengths; re-encoding enforces
+	// the single canonical wire form, not merely equal numeric values.
 	encoded, err := MarshalInteger(result)
 	if err != nil || !bytes.Equal(data, encoded) {
 		return integer.Integer{}, invalidEncoding(err)
@@ -57,14 +72,17 @@ func UnmarshalInteger(data []byte, limits gomath.Limits) (integer.Integer, error
 	return result, nil
 }
 
-// MarshalRational returns the versioned deterministic normalized encoding.
+// MarshalRational returns a new version-1 frame with normalized numerator and
+// positive denominator. Encoding has no fresh resource budget.
 func MarshalRational(value rational.Rational) ([]byte, error) {
 	result := appendSigned(header(kindRational), value.Numerator())
 
 	return appendMagnitude(result, value.Denominator()), nil
 }
 
-// UnmarshalRational decodes a versioned rational under explicit limits.
+// UnmarshalRational decodes a canonical reduced rational under explicit limits.
+// Unlike rational.Parse, it rejects an unreduced encoding. The result retains
+// no input; a zero denominator is malformed syntax, not an arithmetic error.
 func UnmarshalRational(data []byte, limits gomath.Limits) (rational.Rational, error) {
 	reader, err := newReader(data, kindRational, limits)
 	if err != nil {
@@ -89,6 +107,7 @@ func UnmarshalRational(data []byte, limits gomath.Limits) (rational.Rational, er
 	if err != nil {
 		return rational.Rational{}, err
 	}
+	// Normalization can change an unreduced fraction; reject such a wire alias.
 	encoded, err := MarshalRational(result)
 	if err != nil || !bytes.Equal(data, encoded) {
 		return rational.Rational{}, invalidEncoding(err)
@@ -97,7 +116,9 @@ func UnmarshalRational(data []byte, limits gomath.Limits) (rational.Rational, er
 	return result, nil
 }
 
-// MarshalDecimal returns the versioned coefficient-and-exponent encoding.
+// MarshalDecimal returns a new version-1 coefficient-and-exponent frame,
+// retaining SameRepresentation even for zeros. Encoding has no fresh resource
+// budget.
 func MarshalDecimal(value decimal.Decimal) ([]byte, error) {
 	result := appendSigned(header(kindDecimal), value.Coefficient())
 	buffer := make([]byte, binary.MaxVarintLen32)
@@ -106,7 +127,9 @@ func MarshalDecimal(value decimal.Decimal) ([]byte, error) {
 	return append(result, buffer[:length]...), nil
 }
 
-// UnmarshalDecimal decodes a versioned representation-preserving decimal.
+// UnmarshalDecimal decodes a canonical version-1 decimal, preserving
+// coefficient and exponent under the constructor's explicit bounds. No input
+// buffer is retained.
 func UnmarshalDecimal(data []byte, limits gomath.Limits) (decimal.Decimal, error) {
 	reader, err := newReader(data, kindDecimal, limits)
 	if err != nil {
@@ -142,8 +165,9 @@ func UnmarshalDecimal(data []byte, limits gomath.Limits) (decimal.Decimal, error
 	return result, nil
 }
 
-// MarshalFloat returns a versioned encoding that retains binary precision and
-// the shared rounding policy.
+// MarshalFloat returns a new version-1 frame containing math/big's float Gob
+// payload and the shared rounding mode. Numeric value, signed zero, binary
+// precision and policy are encoded; encoding has no fresh resource budget.
 func MarshalFloat(value bigfloat.Float) ([]byte, error) {
 	return marshalFloat(value, (*big.Float).GobEncode)
 }
@@ -162,7 +186,9 @@ func marshalFloat(value bigfloat.Float, encode func(*big.Float) ([]byte, error))
 	return append(result, payload...), nil
 }
 
-// UnmarshalFloat decodes a versioned binary Float under explicit limits.
+// UnmarshalFloat decodes a canonical version-1 Float under explicit limits and
+// the encoded precision/rounding policy. Precision must be positive: a frame of
+// the unconstructed zero Float is not accepted. No input buffer is retained.
 func UnmarshalFloat(data []byte, limits gomath.Limits) (bigfloat.Float, error) {
 	reader, err := newReader(data, kindFloat, limits)
 	if err != nil {

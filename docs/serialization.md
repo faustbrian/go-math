@@ -1,7 +1,11 @@
 # Conversions and serialization
 
-Text and JSON round-trip canonical exact values; JSON deliberately emits
-strings to prevent decoder precision loss. Binary codecs are deterministic,
+Integer, rational and decimal text/JSON preserve numeric values when decoded
+under sufficient limits; they do not preserve every decimal coefficient/exponent
+representation. JSON deliberately emits strings to prevent decoder precision
+loss. Binary-float text requires an explicit decode precision/rounding policy;
+re-parsing with directed rounding can change the rendered value. Binary codecs
+are deterministic,
 versioned, and preserve decimal representation and float precision/rounding.
 Mutable `math/big` values are copied on input and output.
 

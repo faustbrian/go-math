@@ -11,6 +11,10 @@ import (
 	"github.com/faustbrian/go-math/integer"
 )
 
+// FuzzParseAndArithmetic varies bases 2..36 and grammar flags under a 256-digit
+// input ceiling. Accepted values must survive canonical decimal parsing, cancel
+// with their inverse and encode as JSON strings; rejected inputs have one
+// bounded terminal category.
 func FuzzParseAndArithmetic(f *testing.F) {
 	for _, seed := range []string{
 		"0", "-1", "42", "999999999999999999", "+ff", "0b101", "1_000",

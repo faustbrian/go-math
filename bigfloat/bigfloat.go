@@ -1,5 +1,14 @@
 // Package bigfloat provides immutable arbitrary-precision binary floating-point
-// values. It is intended for inexact algorithms, not money or exact quantities.
+// values for inexact algorithms, not money or exact quantities. Context
+// precision is measured in bits; conversion and arithmetic may round and report
+// accuracy.
+//
+// Mutable math/big inputs and returned accessors are copied. Value operations
+// can share operands concurrently. Infinity and signed zero are supported, but
+// NaN-producing infinity arithmetic can panic; see Context and its methods.
+// Text does not encode precision or rounding, and directed-rounding parses are
+// not guaranteed to recover the rendered value. Use exact Rat or binary
+// encoding when those distinctions matter.
 package bigfloat
 
 import (
@@ -13,18 +22,40 @@ import (
 	gomath "github.com/faustbrian/go-math"
 )
 
-// Context makes binary precision, rounding, traps, and resource limits explicit.
+// Context makes binary precision, rounding, traps and resource limits explicit.
+// The zero Context is invalid. Context-taking arithmetic checks cancellation
+// before admission, but the synchronous math/big primitive is not preemptible.
+//
+// Infinities are admitted, but NaN is not representable: Add of opposite
+// infinities, Sub of same-signed infinities, Mul of zero and infinity, and Quo
+// of two infinities panic with big.ErrNaN. Validate those operand combinations
+// before calling.
 type Context struct {
+	// Precision counts significant binary bits; it must be positive and within
+	// MaxPrecision and MaxIntermediateBits.
 	Precision uint
-	Rounding  gomath.RoundingMode
-	Traps     gomath.Condition
-	Limits    gomath.Limits
+	// Rounding selects a shared mode except RoundHalfDown, which is unsupported.
+	// Zero selects nearest with ties to even.
+	Rounding gomath.RoundingMode
+	// Traps selects raised rounding or division-by-zero conditions that return
+	// ErrTrappedCondition with the result intact. Domain errors are returned
+	// directly.
+	Traps gomath.Condition
+	// Limits uses DefaultLimits only when the entire value is zero; otherwise
+	// every field must pass Validate.
+	Limits gomath.Limits
 }
 
-// Result contains a rounded Float, its direction, and raised conditions.
+// Result contains the rounded Float, its accuracy relative to the exact result,
+// and raised conditions. ErrTrappedCondition retains the result; domain
+// failures may retain InvalidOperation without a usable computed value.
 type Result struct {
-	Value      Float
-	Accuracy   big.Accuracy
+	// Value is the rounded result, also retained when a condition is trapped.
+	Value Float
+	// Accuracy reports whether Value is below, equal to or above the exact result.
+	Accuracy big.Accuracy
+	// Conditions raises Rounded and Inexact for non-exact accuracy, plus the
+	// explicit DivisionByZero or InvalidOperation branches.
 	Conditions gomath.Condition
 }
 
@@ -37,7 +68,9 @@ type Float struct {
 	rounding  gomath.RoundingMode
 }
 
-// NewInt64 constructs an exact integer-valued Float.
+// NewInt64 converts an integer at the context's binary precision. Low precision
+// may round even an integer source; Accuracy and Conditions report that
+// rounding.
 func NewInt64(value int64, operation Context) (Result, error) {
 	mode, limits, err := operation.validate()
 	if err != nil {
@@ -48,8 +81,9 @@ func NewInt64(value int64, operation Context) (Result, error) {
 	return operation.finish(result, result.Acc(), limits)
 }
 
-// FromBig constructs a Float by defensively copying and rounding value to the
-// explicit operation context.
+// FromBig admits a non-nil source's precision and exponent under Limits, then
+// copies and rounds it to the explicit context. Rounding to a lower precision
+// does not bypass source admission. Infinities and signed zeros are retained.
 func FromBig(value *big.Float, operation Context) (Result, error) {
 	if value == nil {
 		return Result{}, fmt.Errorf("%w: nil big.Float", gomath.ErrInvalidArgument)
@@ -66,7 +100,8 @@ func FromBig(value *big.Float, operation Context) (Result, error) {
 	return operation.finish(result, result.Acc(), limits)
 }
 
-// FromRat constructs a Float from an exact rational and reports any rounding.
+// FromRat converts an exact non-nil rational at context binary precision and
+// reports rounding. Both source components must fit MaxIntermediateBits.
 func FromRat(value *big.Rat, operation Context) (Result, error) {
 	if value == nil {
 		return Result{}, fmt.Errorf("%w: nil big.Rat", gomath.ErrInvalidArgument)
@@ -83,7 +118,10 @@ func FromRat(value *big.Rat, operation Context) (Result, error) {
 	return operation.finish(result, result.Acc(), limits)
 }
 
-// Parse parses a strict finite or infinite big.Float form in an explicit base.
+// Parse uses math/big.ParseFloat grammar with base 0, 2, 10 or 16, rounding to
+// the explicit binary precision. Base zero infers the base; surrounding
+// whitespace is rejected. MaxInputDigits here bounds all input bytes, not only
+// digits. Finite values and signed infinities are accepted, but NaN is not.
 func Parse(text string, base int, operation Context) (Result, error) {
 	mode, limits, err := operation.validate()
 	if err != nil {
@@ -118,8 +156,11 @@ func (f Float) Precision() uint { return f.precision }
 // Rounding returns the construction rounding mode.
 func (f Float) Rounding() gomath.RoundingMode { return f.rounding }
 
-// String returns a canonical decimal representation that round-trips to the
-// stored binary floating-point value at its precision.
+// String renders decimal text with significant digits derived from f's binary
+// precision. It retains infinity and the sign of zero, but does not encode
+// precision or rounding policy. Re-parsing with directed rounding may change
+// the value; use Rat for the exact finite value or the binary codec for stored
+// policy.
 func (f Float) String() string { return f.value.Text('g', roundTripDecimalDigits(f.precision)) }
 
 // IsInf reports whether f is positive or negative infinity.
@@ -134,7 +175,8 @@ func (f Float) Signbit() bool { return f.value.Signbit() }
 // Cmp compares f and other numerically.
 func (f Float) Cmp(other Float) int { return f.value.Cmp(&other.value) }
 
-// Equal reports numeric equality.
+// Equal reports numeric equality, ignoring precision, rounding policy and the
+// distinction between positive and negative zero.
 func (f Float) Equal(other Float) bool { return f.Cmp(other) == 0 }
 
 // Neg returns -f while preserving representation policy.
@@ -153,7 +195,9 @@ func (f Float) Abs() Float {
 	return fromBig(value, f.precision, f.rounding)
 }
 
-// Int returns the exact integral value or ErrConversion.
+// Int returns an independent mutable integer only if f is finite and integral;
+// otherwise it returns ErrConversion. It does not apply a fresh resource
+// budget.
 func (f Float) Int() (*big.Int, error) {
 	if f.IsInf() {
 		return nil, gomath.ErrConversion
@@ -166,7 +210,8 @@ func (f Float) Int() (*big.Int, error) {
 	return new(big.Int).Set(value), nil
 }
 
-// Rat returns the exact rational represented by a finite Float.
+// Rat returns the exact finite binary value as an independent mutable rational.
+// Infinity returns ErrConversion; no fresh resource budget is applied.
 func (f Float) Rat() (*big.Rat, error) {
 	if f.IsInf() {
 		return nil, gomath.ErrConversion
@@ -176,28 +221,37 @@ func (f Float) Rat() (*big.Rat, error) {
 	return new(big.Rat).Set(value), nil
 }
 
-// MarshalText returns the canonical round-trip-safe decimal representation.
+// MarshalText returns String's decimal form in a new buffer; binary precision
+// and rounding policy are not encoded.
 func (f Float) MarshalText() ([]byte, error) { return []byte(f.String()), nil }
 
-// MarshalJSON encodes f as a string to avoid JSON-number narrowing.
+// MarshalJSON encodes String as a JSON string, avoiding JSON-number narrowing
+// but not encoding binary precision or rounding policy.
 func (f Float) MarshalJSON() ([]byte, error) { return json.Marshal(f.String()) }
 
-// Add performs context-rounded addition.
+// Add performs context-rounded addition. Opposite infinities panic with
+// big.ErrNaN rather than returning an InvalidOperation result.
 func (c Context) Add(ctx context.Context, left, right Float) (Result, error) {
 	return c.binary(ctx, left, right, (*big.Float).Add)
 }
 
-// Sub performs context-rounded subtraction.
+// Sub performs context-rounded subtraction. Same-signed infinities panic with
+// big.ErrNaN rather than returning an InvalidOperation result.
 func (c Context) Sub(ctx context.Context, left, right Float) (Result, error) {
 	return c.binary(ctx, left, right, (*big.Float).Sub)
 }
 
-// Mul performs context-rounded multiplication.
+// Mul performs context-rounded multiplication. Zero times infinity panics with
+// big.ErrNaN rather than returning an InvalidOperation result.
 func (c Context) Mul(ctx context.Context, left, right Float) (Result, error) {
 	return c.binary(ctx, left, right, (*big.Float).Mul)
 }
 
-// Quo performs context-rounded division and reports zero divisors.
+// Quo performs context-rounded division. A nonzero numerator over signed zero
+// returns the corresponding infinity and DivisionByZero, or ErrTrappedCondition
+// with that result when trapped. Zero over zero returns ErrDomain and
+// InvalidOperation independently of Traps. Two infinities panic with
+// big.ErrNaN.
 func (c Context) Quo(ctx context.Context, numerator, denominator Float) (Result, error) {
 	mode, limits, err := c.validateContext(ctx)
 	if err != nil {
@@ -232,7 +286,9 @@ func (c Context) Quo(ctx context.Context, numerator, denominator Float) (Result,
 	return c.binaryWithMode(numerator, denominator, mode, limits, (*big.Float).Quo)
 }
 
-// Sqrt performs a context-rounded square root.
+// Sqrt performs a context-rounded square root. Negative values, including
+// negative infinity, return ErrDomain with InvalidOperation independently of
+// Traps. Negative zero retains its sign.
 func (c Context) Sqrt(ctx context.Context, value Float) (Result, error) {
 	mode, limits, err := c.validateContext(ctx)
 	if err != nil {

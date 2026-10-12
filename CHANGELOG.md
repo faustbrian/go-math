@@ -13,6 +13,12 @@
 
 ### Documentation
 
+- Clarify source contracts for precision, rounding, finite overflow, resource
+  admission, cancellation, copied numeric storage and codec representation.
+  Document binary-float exceptional infinity panics and directed-rounding
+  text limitations, and distinguish numeric law assertions from representation
+  preservation.
+
 - Regenerate the API compatibility baseline from the clean v1.1.3 source so
   incidental, unpublished dependency-directory packages are not treated as
   released APIs.

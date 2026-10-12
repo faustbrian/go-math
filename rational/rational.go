@@ -1,4 +1,12 @@
-// Package rational provides immutable exact fractions.
+// Package rational provides immutable normalized exact fractions. Mutable
+// math/big inputs and accessors are copied, and value operations may be used
+// concurrently without changing operands. The zero value represents zero.
+//
+// Context-taking arithmetic checks nil/cancellation and operand budgets before
+// work, then admits the normalized result; math/big primitives are synchronous
+// and cannot be interrupted mid-call. These bit bounds are not an allocation
+// quota for every internal normalization step. Methods without limits do not
+// apply a fresh budget; Decimal explicitly bounds fixed-scale conversion.
 package rational
 
 import (
@@ -12,18 +20,25 @@ import (
 	gomath "github.com/faustbrian/go-math"
 )
 
-// Rational is an immutable normalized fraction. Its zero value represents zero.
+// Rational is an immutable fraction reduced to coprime numerator and positive
+// denominator. Its zero value represents 0/1; no signed zero is retained.
 type Rational struct{ value big.Rat }
 
 // Zero returns the canonical rational zero.
 func Zero() Rational { return Rational{} }
 
-// New constructs a normalized fraction from machine integers.
+// New constructs a reduced fraction from machine integers using DefaultLimits.
+// A zero denominator returns ErrDivisionByZero; negative denominators
+// normalize.
 func New(numerator, denominator int64) (Rational, error) {
 	return NewChecked(big.NewInt(numerator), big.NewInt(denominator), gomath.DefaultLimits())
 }
 
-// NewChecked constructs a normalized fraction and rejects a zero denominator.
+// NewChecked copies and reduces non-nil components, making the denominator
+// positive. A zero denominator returns ErrDivisionByZero. Component bit lengths
+// are checked before reduction, so cancellation of large factors does not
+// bypass MaxIntermediateBits. Typed components do not use the textual digit
+// ceilings.
 func NewChecked(numerator, denominator *big.Int, limits gomath.Limits) (Rational, error) {
 	if numerator == nil || denominator == nil {
 		return Rational{}, fmt.Errorf("%w: nil fraction component", gomath.ErrInvalidArgument)
@@ -53,7 +68,15 @@ func FromBig(value *big.Rat, limits gomath.Limits) (Rational, error) {
 	return NewChecked(value.Num(), value.Denom(), limits)
 }
 
-// Parse parses a canonical integer or numerator/denominator fraction.
+// Parse accepts a base-10 integer or numerator/denominator fraction with an
+// optional minus on either component. It rejects whitespace, plus signs,
+// multiple leading zeros, underscores and exponent notation. Fractions need not
+// be reduced; a negative denominator is accepted and normalized.
+//
+// The raw byte ceiling is saturating 2*MaxInputDigits+3, checked before
+// grammar. Each component has its own digit budget and stops at its first
+// conclusive syntax/limit failure. A zero denominator returns
+// ErrDivisionByZero.
 func Parse(text string, limits gomath.Limits) (Rational, error) {
 	if err := limits.Validate(); err != nil {
 		return Rational{}, err
@@ -95,7 +118,8 @@ func (r Rational) Numerator() *big.Int { return new(big.Int).Set(r.value.Num()) 
 // Denominator returns a mutable copy of the positive normalized denominator.
 func (r Rational) Denominator() *big.Int { return new(big.Int).Set(r.value.Denom()) }
 
-// String returns the canonical normalized fraction.
+// String returns the reduced base-10 fraction, omitting /1 for integers. It
+// does not apply a fresh output limit.
 func (r Rational) String() string { return r.value.RatString() }
 
 // MarshalText returns the canonical normalized fraction.
@@ -134,7 +158,8 @@ func (r Rational) Mul(ctx context.Context, other Rational, limits gomath.Limits)
 	return binary(ctx, &r.value, &other.value, limits, (*big.Rat).Mul)
 }
 
-// Quo returns r / other.
+// Quo returns the exact r / other under operand/result bit bounds. A zero
+// divisor returns ErrDivisionByZero after operand admission.
 func (r Rational) Quo(ctx context.Context, other Rational, limits gomath.Limits) (Rational, error) {
 	if err := validateContext(ctx, limits); err != nil {
 		return Rational{}, err
@@ -149,7 +174,9 @@ func (r Rational) Quo(ctx context.Context, other Rational, limits gomath.Limits)
 	return checked(new(big.Rat).Quo(&r.value, &other.value), limits)
 }
 
-// Pow returns r raised to an integer exponent.
+// Pow returns r raised to a signed integer exponent. Negative exponents invert
+// the fraction; zero to a negative power returns ErrDivisionByZero. An exponent
+// of zero returns one, including 0^0, after operand and exponent admission.
 func (r Rational) Pow(ctx context.Context, exponent int64, limits gomath.Limits) (Rational, error) {
 	if err := validateContext(ctx, limits); err != nil {
 		return Rational{}, err
@@ -191,7 +218,13 @@ func powerExceedsBits(value *big.Int, exponent uint64, maximum int) bool {
 	return uint64(bits-1) > (uint64(maximum)-1)/exponent // #nosec G115 -- BitLen zero was handled above; Pow validates a positive host-int maximum before calling this helper.
 }
 
-// Decimal returns a fixed-scale base-10 expansion and any rounding conditions.
+// Decimal returns a base-10 string with exactly scale fractional places, using
+// mode to round the exact fraction once. Scale must be nonnegative and at most
+// MaxDecimalExpansion; the power-of-ten and result must fit intermediate
+// bounds. The output length must be at most MaxOutputDigits+2 bytes.
+//
+// A nonzero discarded remainder raises Rounded and Inexact; exact conversion
+// raises neither. The method is synchronous and has no cancellation parameter.
 func (r Rational) Decimal(scale int, mode gomath.RoundingMode, limits gomath.Limits) (string, gomath.Condition, error) {
 	if err := limits.Validate(); err != nil {
 		return "", 0, err
@@ -267,7 +300,8 @@ func Max(left, right Rational) Rational {
 	}
 }
 
-// Clamp restricts value to the inclusive interval [minimum, maximum].
+// Clamp restricts value to the inclusive interval [minimum, maximum]. An
+// inverted interval returns ErrInvalidArgument.
 func Clamp(value, minimum, maximum Rational) (Rational, error) {
 	if minimum.Cmp(maximum) > 0 {
 		return Rational{}, fmt.Errorf("%w: inverted clamp interval", gomath.ErrInvalidArgument)
