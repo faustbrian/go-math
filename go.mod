@@ -4,6 +4,6 @@ go 1.27.0
 
 require (
 	github.com/cockroachdb/apd/v3 v3.2.3
-	github.com/shopspring/decimal v1.4.0
+	github.com/shopspring/decimal v1.5.0
 	go.uber.org/goleak v1.3.0
 )
