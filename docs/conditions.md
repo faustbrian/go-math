@@ -1,5 +1,7 @@
 # Conditions and traps
 
+[Documentation index](README.md)
+
 Decimal results report `Rounded`, `Inexact`, `Overflow`, `Underflow`,
 `Subnormal`, and `DivisionByZero`. Conditions remain available even when a
 matching result-condition trap returns an error. Decimal division by zero

@@ -1,5 +1,7 @@
 # Source documentation audit
 
+[Documentation index](README.md)
+
 ## Scope and acceptance
 
 This audit began before source edits at remote-main base

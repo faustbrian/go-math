@@ -1,5 +1,7 @@
 # Performance
 
+[Documentation index](README.md)
+
 Exact arithmetic cost scales with operand size. Decimal exponent alignment,
 division, powers, and roots can allocate substantially, so limits are part of
 the API rather than an operational afterthought. Reuse immutable values and

@@ -1,5 +1,7 @@
 # Numeric model
 
+[Documentation index](README.md)
+
 `Integer` is closed under exact integral operations. `Rational` preserves an
 exact normalized fraction. `Decimal` stores `coefficient * 10^exponent` and can
 distinguish numeric equality from representation equality. `Float` is binary

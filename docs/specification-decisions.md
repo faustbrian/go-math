@@ -1,5 +1,7 @@
 # Specification decisions
 
+[Documentation index](README.md)
+
 This register makes every observable choice attributable to the pinned General
 Decimal Arithmetic sources. The complete typed record is repeated in each
 section so the human and machine contracts can be audited without reconstructing

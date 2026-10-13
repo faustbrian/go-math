@@ -1,5 +1,7 @@
 # Cookbook
 
+[Documentation index](README.md)
+
 Parse an exact amount with `decimal.Parse`, then use `Quantize` for a fixed
 fractional scale. Use `Context.Quo` when a quotient may repeat and inspect
 `Result.Conditions`; use `QuoExact` when repetition must fail. Construct ratios

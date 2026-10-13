@@ -2,9 +2,8 @@
 
 [![CI](https://github.com/faustbrian/go-math/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/faustbrian/go-math/actions/workflows/ci.yml)
 [![CodeQL](https://img.shields.io/badge/CodeQL-required-blue)](https://github.com/faustbrian/go-math/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Mutation](https://img.shields.io/badge/mutation-optional_local_or_full-blue)](CONTRIBUTING.md#verification)
-[![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
+[![Documentation](https://img.shields.io/badge/docs-structural_checks_in_CI-blue)](docs/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-math.svg)](https://pkg.go.dev/github.com/faustbrian/go-math)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-math?sort=semver)](https://github.com/faustbrian/go-math/releases)
 [![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
@@ -16,10 +15,10 @@ decimals, and explicitly inexact binary floats. Use ordinary Go numeric types
 when their fixed width and machine arithmetic are sufficient.
 
 The root module is stable at v1 and requires Go 1.27.0 or newer. Install the
-current minor release with:
+stable v1 major with:
 
 ```sh
-go get github.com/faustbrian/go-math@v1.1.0
+go get github.com/faustbrian/go-math@v1
 ```
 
 The root package identifier intentionally remains `gomath`, avoiding a
@@ -43,8 +42,8 @@ See the [executable examples](example_test.go),
 [documentation index](docs/README.md),
 [specification decisions](docs/specification-decisions.md),
 [cookbook](docs/cookbook.md), and [verification guide](docs/verification.md).
-See the versioned [Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)
-and [package-family selection guidance](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/design-language.md#package-families-and-selection)
+See the versioned [Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.8.4/docs/ecosystem/README.md)
+and [package-family selection guidance](https://github.com/faustbrian/go-library-tools/blob/v1.8.4/docs/ecosystem/design-language.md#package-families-and-selection)
 for the shared design language this module follows.
 
 ## Packages

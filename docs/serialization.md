@@ -1,5 +1,7 @@
 # Conversions and serialization
 
+[Documentation index](README.md)
+
 Integer, rational and decimal text/JSON preserve numeric values when decoded
 under sufficient limits; they do not preserve every decimal coefficient/exponent
 representation. JSON deliberately emits strings to prevent decoder precision

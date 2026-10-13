@@ -1,5 +1,7 @@
 # Verification
 
+[Documentation index](README.md)
+
 `make check` and `make ci` run bounded local checks through the public pinned
 verifier; `make ci` also validates repository and cohesion contracts.
 `make check-full` explicitly selects full assurance, retaining architecture,

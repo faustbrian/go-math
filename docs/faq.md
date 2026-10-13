@@ -1,5 +1,7 @@
 # FAQ
 
+[Documentation index](README.md)
+
 **Why not one Number interface?** The four families have incompatible closure,
 precision, and rounding semantics.
 

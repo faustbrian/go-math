@@ -1,5 +1,7 @@
 # Troubleshooting
 
+[Documentation index](README.md)
+
 `ErrInvalidSyntax` means the selected strict grammar rejected the input; enable
 sign, exponent, underscore, whitespace, or leading-zero options deliberately.
 `ErrLimitExceeded` means work was rejected before unsafe allocation; lower the

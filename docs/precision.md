@@ -1,5 +1,7 @@
 # Precision and rounding
 
+[Documentation index](README.md)
+
 Exact integer, rational, and decimal operations never round. Decimal `Context`
 operations use significant decimal digits; quantization uses an explicit
 fractional scale. Supported modes are half-even, half-up, half-down, down,

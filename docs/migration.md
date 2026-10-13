@@ -1,5 +1,7 @@
 # Migration
 
+[Documentation index](README.md)
+
 Choose one family from the domain invariant, not the source representation.
 Replace integer wrappers with `integer.Integer`, exact ratios with `Rational`,
 money-like base-10 values with `Decimal`, and only explicitly binary numerical

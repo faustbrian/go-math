@@ -1,5 +1,7 @@
 # Security and resource limits
 
+[Documentation index](README.md)
+
 ## Threat model
 
 The model covers the v1 root module and its Integer, Rational, Decimal,

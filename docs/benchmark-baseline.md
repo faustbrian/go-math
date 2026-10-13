@@ -1,5 +1,7 @@
 # Benchmark baseline
 
+[Documentation index](README.md)
+
 The local baseline was captured on 20 July 2026 with Go 1.26.5 on Darwin arm64
 using an Apple M4 Max and `-benchtime=20ms`. Timings are diagnostic rather than
 CI thresholds because shared runners are noisy; deterministic allocation

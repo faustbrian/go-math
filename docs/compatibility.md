@@ -1,5 +1,7 @@
 # Compatibility
 
+[Documentation index](README.md)
+
 Decimal parsing, arithmetic, condition, quantize, serialization, corpus, and
 peer-comparison boundaries are recorded in the
 [specification decision register](specification-decisions.md). A changed
