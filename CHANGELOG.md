@@ -23,6 +23,12 @@
   incidental, unpublished dependency-directory packages are not treated as
   released APIs.
 
+## 1.1.6 - 2026-10-22
+
+### Changed
+
+- Publish the current source and documentation with a fresh immutable tag.
+
 ## 1.1.5 - 2026-10-06
 
 ### Changed
