@@ -107,7 +107,7 @@ Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
     "Use a strict default grammar, explicit opt-in parser options, numeric equality, and separate representation equality"
   ],
   "peer_behavior": "APD and shopspring/decimal accept different input grammars and expose different scale or exponent identity semantics.",
-  "selected_behavior": "Parse uses the strict package grammar; ParseWithOptions separately enables exponent notation, a leading plus, leading zeros, surrounding whitespace, and underscores; bounded parsing uses the first conclusive syntax or configured-limit rejection; Equal compares numeric value while SameRepresentation compares coefficient and exponent.",
+  "selected_behavior": "Parse uses the strict package grammar; ParseWithOptions separately enables exponent notation, a leading plus, leading zeros, surrounding whitespace, underscores, and a bare mantissa point with digits on one side; bounded parsing uses the first conclusive syntax or configured-limit rejection; Equal compares numeric value while SameRepresentation compares coefficient and exponent.",
   "rationale": "Explicit grammar switches and two named equality contracts prevent permissive input or scale identity from being inferred accidentally.",
   "security_consequences": "Unexpected separators, whitespace, signs, exponent notation, hostile digit counts, and over-bound raw input fail closed without entering diagnostic text.",
   "resource_consequences": "Parsing stops at the first conclusive grammar or configured-limit rejection before attacker-sized coefficient or exponent work and representation comparison performs no normalization allocation.",
@@ -118,12 +118,16 @@ Authoritative URL: <https://speleotrove.com/decimal/decarith.html>
     "TestDecimalParserCanExplicitlyEnableExponentNotation",
     "TestDecimalRepresentationAndBigOwnership",
     "TestParseUsesFirstConclusiveRejection",
-    "TestParseSharesDigitBudgetAcrossMantissa"
+    "TestParseSharesDigitBudgetAcrossMantissa",
+    "TestParseBarePointAcceptsOneSidedMantissaUnderEveryOptionCombination",
+    "TestParseBarePointRejectsMantissaWithoutDigitsOrMisplacedSeparators",
+    "TestParseBarePointSharesTheMantissaDigitBudget"
   ],
   "fixture_evidence": [],
   "fuzz_evidence": [
     "FuzzParseContextAndRoundTrip",
-    "FuzzJSONDecoding"
+    "FuzzJSONDecoding",
+    "FuzzParseBarePointOracle"
   ],
   "interoperability_evidence": [],
   "differential_evidence": [],

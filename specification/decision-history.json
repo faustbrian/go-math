@@ -2,7 +2,7 @@
   "schema_version": 1,
   "entries": [
     {"id": "MATH-DEC-001", "digests": ["bf1c165c9f1dc38c6373deb5a104ab520a2392efd600b71e2cc75c5391303ff0"]},
-    {"id": "MATH-DEC-002", "digests": ["6b3149aea3a5fcb70b8bc58bc6618d1275209ee25489875c62e956b4a778d34d", "d5bb6be62247fff18b84617b0903bbc062de79f7d63d19838c1b3f944c370531"]},
+    {"id": "MATH-DEC-002", "digests": ["6b3149aea3a5fcb70b8bc58bc6618d1275209ee25489875c62e956b4a778d34d", "d5bb6be62247fff18b84617b0903bbc062de79f7d63d19838c1b3f944c370531", "789f86146db5308636cdc44a6885f5fdece3756b3d6a212ddd7245fae4b1e675"]},
     {"id": "MATH-DEC-003", "digests": ["58fa0f8a0d1d8af32d75659513da17ee3c44b02b086b6cc441f5e4e9c5890511"]},
     {"id": "MATH-DEC-004", "digests": ["3c27045c7e9639a8fe7f8be4c3cad57195fca56521e5778a72cb88cec8321151"]},
     {"id": "MATH-DEC-005", "digests": ["935afbb1f907f4da22212156dc6781175f3370941ac848156cbabd5e20301811"]},
