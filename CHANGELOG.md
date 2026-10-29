@@ -2,14 +2,6 @@
 
 ## Unreleased
 
-### Added
-
-- Add `decimal.ParseOptions.AllowBarePoint`, which admits a mantissa point
-  with digits on only one side, such as `.5`, `5.`, `-.5` and, with
-  `AllowExponent`, `5.e3`. A lone point and a point with no mantissa digits
-  before an exponent remain invalid. The option is off by default, so existing
-  parsing is unchanged.
-
 ### Fixed
 
 - Compare decimal division ratios without truncating large coefficient-digit
@@ -30,6 +22,16 @@
 - Regenerate the API compatibility baseline from the clean v1.1.3 source so
   incidental, unpublished dependency-directory packages are not treated as
   released APIs.
+
+## 1.2.0 - 2026-10-29
+
+### Added
+
+- Add `decimal.ParseOptions.AllowBarePoint`, which admits a mantissa point
+  with digits on only one side, such as `.5`, `5.`, `-.5` and, with
+  `AllowExponent`, `5.e3`. A lone point and a point with no mantissa digits
+  before an exponent remain invalid. The option is off by default, so existing
+  parsing is unchanged.
 
 ## 1.1.6 - 2026-10-22
 
