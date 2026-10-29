@@ -72,6 +72,11 @@ operations:
     budget: 10000x
     timeout: 2m
   - type: go-test
+    packages: ["./decimal"]
+    fuzz: '^FuzzParseBarePointOracle$'
+    budget: 10000x
+    timeout: 2m
+  - type: go-test
     packages: ["./bigfloat"]
     fuzz: '^FuzzParse$'
     budget: 10000x

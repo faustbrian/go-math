@@ -76,7 +76,7 @@ changes do not require a library release.
 
 The owner-level [selected-assurance caller](.github/workflows/assurance.yml) is
 configured for main only, on day 22 of each month at 07:43 UTC. It selects one
-of the six declared root-module targets using the shared UTC-week rotation,
+of the seven declared root-module targets using the shared UTC-week rotation,
 with 30 seconds of active exploration. The production packages are integer,
 rational, decimal, bigfloat and encoding; the selected risk is bounded numeric
 grammar, exponent/precision handling, terminal error categories and canonical
@@ -93,7 +93,7 @@ and execution to ten minutes, active workers and CPU to two, owned memory to
 2 GiB, native output to 1 MiB and private-cache lifetime. Failure, cancellation,
 exhausted budgets and cleanup refusal remain attributable failures.
 
-This lane does not run mutation or replace Required, the original six
+This lane does not run mutation or replace Required, the seven
 10,000-iteration fuzz budgets, explicit `make check-full`, GDA vector/skip
 accounting, maintained-peer conformance, architecture/provenance/API checks,
 native-security diagnostics or relevant public-consumer/release qualification.

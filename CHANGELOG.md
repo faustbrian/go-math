@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+- Add `decimal.ParseOptions.AllowBarePoint`, which admits a mantissa point
+  with digits on only one side, such as `.5`, `5.`, `-.5` and, with
+  `AllowExponent`, `5.e3`. A lone point and a point with no mantissa digits
+  before an exponent remain invalid. The option is off by default, so existing
+  parsing is unchanged.
+
 ### Fixed
 
 - Compare decimal division ratios without truncating large coefficient-digit

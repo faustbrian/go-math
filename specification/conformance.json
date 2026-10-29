@@ -16,9 +16,9 @@
     {
       "id": "MATH-DEC-002",
       "authoritative_sources": ["gda-specification-source"],
-      "executable_evidence": ["TestDecimalConstructionAndParsingEdges", "TestDecimalParserCanExplicitlyEnableExponentNotation", "TestDecimalRepresentationAndBigOwnership", "TestParseUsesFirstConclusiveRejection", "TestParseSharesDigitBudgetAcrossMantissa"],
+      "executable_evidence": ["TestDecimalConstructionAndParsingEdges", "TestDecimalParserCanExplicitlyEnableExponentNotation", "TestDecimalRepresentationAndBigOwnership", "TestParseUsesFirstConclusiveRejection", "TestParseSharesDigitBudgetAcrossMantissa", "TestParseBarePointAcceptsOneSidedMantissaUnderEveryOptionCombination", "TestParseBarePointRejectsMantissaWithoutDigitsOrMisplacedSeparators", "TestParseBarePointSharesTheMantissaDigitBudget"],
       "fixtures": [],
-      "fuzz": ["FuzzParseContextAndRoundTrip", "FuzzJSONDecoding"],
+      "fuzz": ["FuzzParseContextAndRoundTrip", "FuzzJSONDecoding", "FuzzParseBarePointOracle"],
       "interoperability_evidence": [],
       "interoperability_classification": "not assessed",
       "differential_evidence": [],

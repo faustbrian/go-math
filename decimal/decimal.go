@@ -75,6 +75,11 @@ type ParseOptions struct {
 	// AllowWhitespace trims surrounding Unicode whitespace after raw-byte
 	// admission.
 	AllowWhitespace bool
+	// AllowBarePoint admits a mantissa point with digits on only one side, as
+	// in ".5" or "5.", including before an exponent such as "5.e3". The
+	// mantissa still needs at least one digit, so "." and ".e3" are rejected.
+	// "5." has scale zero and ".50" has scale two.
+	AllowBarePoint bool
 	// Limits must pass Validate; an all-zero parser value is invalid.
 	Limits gomath.Limits
 }
@@ -1107,15 +1112,15 @@ func scanParsedDecimal(input string, options ParseOptions) (string, int, int32, 
 	for index := 0; index < len(input); index++ {
 		character := input[index]
 		if character == 'e' || character == 'E' {
-			if !options.AllowExponent || previousUnderscore || !hasIntegerDigits ||
-				(hasFraction && fractionCount == 0) {
+			if !options.AllowExponent || previousUnderscore ||
+				!validMantissa(hasIntegerDigits, hasFraction, fractionCount, options.AllowBarePoint) {
 				return "", 0, 0, ErrInvalid
 			}
 			exponentStart = index + 1
 			break
 		}
 		if character == '.' {
-			if hasFraction || previousUnderscore || !hasIntegerDigits {
+			if hasFraction || previousUnderscore || (!hasIntegerDigits && !options.AllowBarePoint) {
 				return "", 0, 0, ErrInvalid
 			}
 			hasFraction = true
@@ -1152,7 +1157,7 @@ func scanParsedDecimal(input string, options ParseOptions) (string, int, int32, 
 		totalDigits++
 		previousUnderscore = false
 	}
-	if previousUnderscore || !hasIntegerDigits || (hasFraction && fractionCount == 0) {
+	if previousUnderscore || !validMantissa(hasIntegerDigits, hasFraction, fractionCount, options.AllowBarePoint) {
 		return "", 0, 0, ErrInvalid
 	}
 	mantissaEnd := len(input)
@@ -1176,6 +1181,16 @@ func scanParsedDecimal(input string, options ParseOptions) (string, int, int32, 
 	}
 
 	return digits.String(), fractionCount, exponent, nil
+}
+
+// validMantissa requires digits on both sides of a point unless bare points are
+// enabled, in which case one side suffices but the mantissa still needs a digit.
+func validMantissa(hasIntegerDigits, hasFraction bool, fractionCount int, allowBarePoint bool) bool {
+	if allowBarePoint {
+		return hasIntegerDigits || fractionCount > 0
+	}
+
+	return hasIntegerDigits && (!hasFraction || fractionCount > 0)
 }
 
 func scanDecimalExponent(input string, maximum int32) (int32, error) {
